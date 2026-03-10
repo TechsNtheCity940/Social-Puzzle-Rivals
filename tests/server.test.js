@@ -50,8 +50,14 @@ test("player can join, hint, and finish a match", async () => {
   assert.equal(hint.profile.hints, 2);
   assert.equal(typeof hint.hint, "string");
 
+  const answerByPrompt = {
+    "Which phrase do these emoji suggest? 👥 + 🧩": "Friends Puzzle",
+    "Which phrase do these emoji suggest? 🧠 + ⚔️": "Brain Battle",
+    "Which phrase do these emoji suggest? ⚡ + 🧠": "Speed Thinking",
+  };
+
   const result = await post(`/api/matches/${match.id}/submit`, {
-    choice: "Brain Battle",
+    choice: answerByPrompt[match.puzzle.prompt],
     elapsedSeconds: 14,
     penalties: 0,
   });

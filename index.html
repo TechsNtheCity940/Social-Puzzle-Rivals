@@ -25,11 +25,10 @@
         </div>
       </div>
       <div class="hero-art" aria-hidden="true">
-        <div class="art-orb orb-one"></div>
-        <div class="art-orb orb-two"></div>
-        <div class="art-card card-one">ABC</div>
-        <div class="art-card card-two">?</div>
-        <div class="art-card card-three">IQ</div>
+        <img class="hero-mascot" src="assets/mascot-spark.svg" alt="">
+        <img class="hero-badge-art" src="assets/badge-burst.svg" alt="">
+        <img class="hero-frame-art" src="assets/avatar-frame-star.svg" alt="">
+        <img class="hero-puzzle-art" src="assets/puzzle-word.svg" alt="">
       </div>
       <div class="wallet">
         <div class="wallet-item">
@@ -90,6 +89,27 @@
           <div class="countdown-badge" id="countdownBadge">--</div>
         </div>
 
+        <section class="practice-stage hidden" id="practiceStage">
+          <div class="challenge-head">
+            <div>
+              <p class="practice-label">Playable Practice</p>
+              <h3 id="practicePuzzleTitle">Practice Puzzle</h3>
+            </div>
+            <span class="phase-badge practice-badge" id="practiceStatus">Warm-Up</span>
+          </div>
+          <div class="puzzle-shell">
+            <div class="puzzle-art-wrap">
+              <img class="puzzle-illustration" id="practiceArt" src="assets/puzzle-word.svg" alt="">
+            </div>
+            <div class="puzzle-body">
+              <p class="challenge-prompt" id="practicePrompt"></p>
+              <div id="practiceWorkspace"></div>
+              <p class="hint-copy" id="practiceHintCopy">Practice answers are consequence-free. Learn the mechanic before the live race.</p>
+              <button class="action-button ghost submit-button" id="practiceCheckButton" type="button">Try Practice Answer</button>
+            </div>
+          </div>
+        </section>
+
         <form class="challenge-card hidden" id="challengeForm">
           <div class="challenge-head">
             <div>
@@ -98,11 +118,17 @@
             </div>
             <span class="penalty-chip" id="penaltyChip">Penalty +0s</span>
           </div>
-
-          <p class="challenge-prompt" id="challengePrompt"></p>
-          <div id="challengeWorkspace"></div>
-          <p class="hint-copy" id="hintCopy">Hints reveal a clue or remove one wrong path.</p>
-          <button class="action-button primary submit-button" type="submit">Lock Answer</button>
+          <div class="puzzle-shell">
+            <div class="puzzle-art-wrap">
+              <img class="puzzle-illustration" id="challengeArt" src="assets/puzzle-word.svg" alt="">
+            </div>
+            <div class="puzzle-body">
+              <p class="challenge-prompt" id="challengePrompt"></p>
+              <div id="challengeWorkspace"></div>
+              <p class="hint-copy" id="hintCopy">Hints reveal a clue or remove one wrong path.</p>
+              <button class="action-button primary submit-button" type="submit">Lock Answer</button>
+            </div>
+          </div>
         </form>
 
         <section class="results-card hidden" id="resultsCard">
@@ -118,6 +144,13 @@
           <div>
             <p class="eyebrow">Lobby</p>
             <h2>Rivals</h2>
+          </div>
+        </div>
+        <div class="lobby-spotlight">
+          <img class="lobby-mascot" src="assets/mascot-spark.svg" alt="">
+          <div class="lobby-trophies">
+            <img class="lobby-badge" src="assets/badge-burst.svg" alt="">
+            <img class="lobby-frame" src="assets/avatar-frame-star.svg" alt="">
           </div>
         </div>
         <div class="rivals-list" id="rivalsList"></div>
