@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Puzzle Rivals</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="cyber">
+  <main class="app-shell">
+    <section class="hero-card panel">
+      <div class="hero-copy">
+        <p class="eyebrow">Social Puzzle Rivals</p>
+        <h1>Puzzle races built for rematches.</h1>
+        <p class="hero-text">
+          Join a live-feeling lobby, learn the challenge in 12 seconds, and beat the room before the timer expires.
+        </p>
+      </div>
+      <div class="wallet">
+        <div class="wallet-item">
+          <span class="wallet-label">Season Pts</span>
+          <strong id="seasonPoints">0</strong>
+        </div>
+        <div class="wallet-item">
+          <span class="wallet-label">Coins</span>
+          <strong id="coins">0</strong>
+        </div>
+        <div class="wallet-item">
+          <span class="wallet-label">Hints</span>
+          <strong id="hints">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="arena-grid">
+      <section class="panel stage-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Match Flow</p>
+            <h2 id="phaseTitle">Ready For Queue</h2>
+          </div>
+          <span class="phase-badge" id="phaseBadge">Idle</span>
+        </div>
+
+        <div class="stage-strip">
+          <div class="stage-metric">
+            <span>Mode</span>
+            <strong id="modeLabel">Ranked Sprint</strong>
+          </div>
+          <div class="stage-metric">
+            <span>Puzzle</span>
+            <strong id="puzzleLabel">Waiting</strong>
+          </div>
+          <div class="stage-metric">
+            <span>Round Clock</span>
+            <strong id="roundClock">--</strong>
+          </div>
+        </div>
+
+        <div class="cta-row">
+          <button class="action-button primary" id="joinButton">Join Lobby</button>
+          <button class="action-button secondary" id="revengeButton" disabled>Revenge Match</button>
+          <button class="action-button ghost" id="hintButton" disabled>Use Hint</button>
+        </div>
+
+        <div class="match-copy" id="announcement">
+          Queue up to start a ranked puzzle sprint. Revenge mode targets categories you usually stumble on.
+        </div>
+
+        <div class="practice-card" id="practiceCard">
+          <p class="practice-label">Practice Window</p>
+          <h3 id="practiceTitle">No match active</h3>
+          <p id="practiceBody">Each round announces the puzzle type, then gives you a short warm-up before the race begins.</p>
+          <div class="countdown-badge" id="countdownBadge">--</div>
+        </div>
+
+        <form class="challenge-card hidden" id="challengeForm">
+          <div class="challenge-head">
+            <div>
+              <p class="practice-label">Live Puzzle</p>
+              <h3 id="challengeTitle">Puzzle Title</h3>
+            </div>
+            <span class="penalty-chip" id="penaltyChip">Penalty +0s</span>
+          </div>
+
+          <p class="challenge-prompt" id="challengePrompt"></p>
+          <div id="challengeWorkspace"></div>
+          <p class="hint-copy" id="hintCopy">Hints reveal a clue or remove one wrong path.</p>
+          <button class="action-button primary submit-button" type="submit">Lock Answer</button>
+        </form>
+
+        <section class="results-card hidden" id="resultsCard">
+          <p class="practice-label">Round Results</p>
+          <h3 id="resultsTitle">Placement</h3>
+          <p id="resultsBody"></p>
+          <div class="podium" id="podium"></div>
+        </section>
+      </section>
+
+      <section class="panel rivals-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Lobby</p>
+            <h2>Rivals</h2>
+          </div>
+        </div>
+        <div class="rivals-list" id="rivalsList"></div>
+      </section>
+    </section>
+
+    <section class="insight-grid">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Performance AI</p>
+            <h2>Strengths & Weaknesses</h2>
+          </div>
+        </div>
+        <div class="duo-metrics">
+          <div class="insight-card">
+            <span>Best Category</span>
+            <strong id="bestCategory">No data</strong>
+          </div>
+          <div class="insight-card">
+            <span>Weakest Category</span>
+            <strong id="weakCategory">No data</strong>
+          </div>
+        </div>
+        <div class="category-stats" id="categoryStats"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Social Hooks</p>
+            <h2>Retention Loop</h2>
+          </div>
+        </div>
+        <div class="social-cards">
+          <article class="social-card">
+            <strong>Daily Tournament</strong>
+            <p>Three rotating puzzle playlists with a fresh prize pool every day.</p>
+          </article>
+          <article class="social-card">
+            <strong>Friend Leaderboard</strong>
+            <p>Season points are stacked against your bot-friend roster for quick bragging rights.</p>
+          </article>
+          <article class="social-card">
+            <strong>Clan Teams</strong>
+            <p>Build weekly score totals with your crew once live multiplayer lands.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Cosmetics</p>
+            <h2>Puzzle Themes</h2>
+          </div>
+        </div>
+        <div class="theme-picker">
+          <button class="theme-button active" data-theme-option="cyber">Cyber</button>
+          <button class="theme-button" data-theme-option="fantasy">Fantasy</button>
+          <button class="theme-button" data-theme-option="neon">Neon</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel leaderboard-panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Leaderboard</p>
+          <h2>Season Standings</h2>
+        </div>
+      </div>
+      <div class="leaderboard-list" id="leaderboardList"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
