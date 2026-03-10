@@ -1,24 +1,24 @@
 :root {
   --bg-accent:
-    radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.92), transparent 0 18%),
-    radial-gradient(circle at 84% 14%, rgba(255, 243, 148, 0.82), transparent 0 18%),
-    radial-gradient(circle at 18% 82%, rgba(255, 149, 196, 0.5), transparent 0 22%),
-    linear-gradient(180deg, #7fd6ff 0%, #83e9c5 42%, #ffe57a 100%);
-  --panel: rgba(255, 255, 255, 0.92);
+    radial-gradient(circle at 15% 10%, rgba(255, 255, 255, 0.75), transparent 0 18%),
+    radial-gradient(circle at 85% 18%, rgba(255, 214, 120, 0.48), transparent 0 22%),
+    radial-gradient(circle at 16% 86%, rgba(187, 78, 104, 0.2), transparent 0 24%),
+    linear-gradient(180deg, #69afd0 0%, #7ebf9c 46%, #e3c468 100%);
+  --panel: rgba(248, 244, 236, 0.96);
   --panel-strong: #fff9ef;
-  --panel-border: #16324f;
-  --text: #16324f;
-  --muted: #486785;
-  --accent: #ff5ea8;
-  --accent-strong: #ffd44c;
-  --accent-alt: #52d67d;
-  --accent-blue: #3e9cff;
-  --danger: #ff6a6a;
+  --panel-border: #17365b;
+  --text: #17365b;
+  --muted: #5e6f82;
+  --accent: #cc5d78;
+  --accent-strong: #e0b34f;
+  --accent-alt: #5ca77d;
+  --accent-blue: #5d87b5;
+  --danger: #d95f50;
   --shadow: 0 16px 0 rgba(22, 50, 79, 0.15), 0 26px 40px rgba(22, 50, 79, 0.14);
-  --surface-a: linear-gradient(180deg, #fff6bd 0%, #ffe27f 100%);
-  --surface-b: linear-gradient(180deg, #ffd4ea 0%, #ffaad5 100%);
-  --surface-c: linear-gradient(180deg, #d5ffe0 0%, #acffc2 100%);
-  --surface-d: linear-gradient(180deg, #dff7ff 0%, #bfeeff 100%);
+  --surface-a: linear-gradient(180deg, #f4e2a4 0%, #e5bc58 100%);
+  --surface-b: linear-gradient(180deg, #e5b8c7 0%, #d6879f 100%);
+  --surface-c: linear-gradient(180deg, #b9ddc2 0%, #7fbb95 100%);
+  --surface-d: linear-gradient(180deg, #bedaea 0%, #8eb8cf 100%);
 }
 
 body[data-theme="fantasy"] {
@@ -139,18 +139,16 @@ body::after {
   padding: 12px 0 16px;
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
-  grid-template-rows: auto minmax(0, 1fr) minmax(0, 0.82fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.74fr);
   grid-template-areas:
-    "hero side"
-    "arena side"
-    "arena leader";
+    "hero arena"
+    "side arena";
 }
 
 .hero-card { grid-area: hero; }
 .arena-grid { grid-area: arena; }
 .insight-grid { grid-area: side; }
-.leaderboard-panel { grid-area: leader; }
 
 .panel {
   position: relative;
@@ -185,7 +183,7 @@ body::after {
 
 .hero-card {
   display: grid;
-  grid-template-columns: 1.1fr minmax(220px, 0.9fr) minmax(240px, 0.85fr);
+  grid-template-columns: 1.05fr minmax(220px, 0.95fr);
   gap: 16px;
   padding: 18px;
   min-height: 0;
@@ -209,13 +207,28 @@ body::after {
 }
 
 .hero-copy,
-.wallet,
 .hero-art,
 .stage-panel,
 .rivals-panel,
-.leaderboard-panel,
 .insight-grid > .panel {
   min-height: 0;
+}
+
+.player-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.player-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 3px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.65);
+  font-weight: 900;
 }
 
 .eyebrow,
@@ -324,9 +337,10 @@ body::after {
 
 .wallet {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   align-self: stretch;
+  grid-column: 1 / -1;
 }
 
 .wallet-item,
@@ -383,15 +397,15 @@ body::after {
 .arena-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.7fr);
+  grid-template-columns: 1fr;
   min-height: 0;
 }
 
 .insight-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: 1fr;
-  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 1fr;
   min-height: 0;
 }
 
@@ -517,6 +531,19 @@ body::after {
   border: 3px dashed rgba(22, 50, 79, 0.28);
   background: rgba(255, 255, 255, 0.45);
   flex: 0 0 auto;
+}
+
+body:not(.match-active) .rivals-panel,
+body:not(.match-active) #practiceCard,
+body:not(.match-active) #practiceStage,
+body:not(.match-active) #challengeForm,
+body:not(.match-active) #resultsCard,
+body:not(.match-active) #hintButton {
+  display: none !important;
+}
+
+body:not(.match-active) .stage-panel {
+  justify-content: center;
 }
 
 .practice-card,
@@ -1047,7 +1074,109 @@ body::after {
   font-weight: 800;
 }
 
-.leaderboard-panel { min-height: 0; }
+.clan-quick-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.clan-quick-card {
+  margin-top: 12px;
+  border-radius: 24px;
+  border: 3px solid var(--panel-border);
+  background: linear-gradient(180deg, #dbe8c7 0%, #bfd5a7 100%);
+  box-shadow: 0 8px 0 rgba(22, 50, 79, 0.1);
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.clan-quick-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.menu-toggle,
+.drawer-close {
+  z-index: 2;
+  border: 3px solid var(--panel-border);
+  border-radius: 999px;
+  background: var(--surface-d);
+  color: var(--text);
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 6px 0 rgba(22, 50, 79, 0.12);
+}
+
+.menu-toggle {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
+.menu-drawer {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  bottom: 14px;
+  width: min(440px, calc(100vw - 28px));
+  z-index: 25;
+  border-radius: 30px;
+  border: 3px solid var(--panel-border);
+  background: rgba(248, 244, 236, 0.98);
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 18px;
+  transform: translateX(calc(100% + 24px));
+  transition: transform 240ms ease;
+}
+
+.drawer-open .menu-drawer {
+  transform: translateX(0);
+}
+
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.drawer-body {
+  margin-top: 14px;
+  display: grid;
+  gap: 14px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.drawer-panel {
+  border-radius: 24px;
+  border: 3px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: 0 8px 0 rgba(22, 50, 79, 0.08);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 54, 91, 0.24);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+  z-index: 24;
+}
+
+.drawer-open .drawer-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .podium {
   grid-template-columns: repeat(3, 1fr);
@@ -1272,12 +1401,11 @@ body.match-active .results-card {
 @media (max-width: 1120px) {
   .app-shell {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.75fr);
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 0.8fr);
     grid-template-areas:
       "hero"
       "arena"
-      "side"
-      "leader";
+      "side";
   }
 
   .hero-card {
@@ -1293,6 +1421,7 @@ body.match-active .results-card {
 @media (max-width: 820px) {
   .hero-card,
   .arena-grid,
+  .insight-grid,
   body.match-active .arena-grid {
     grid-template-columns: 1fr;
   }

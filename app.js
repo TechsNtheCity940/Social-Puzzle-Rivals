@@ -18,6 +18,10 @@ const state = {
 };
 
 const refs = {
+  playerName: document.getElementById("playerName"),
+  playerClan: document.getElementById("playerClan"),
+  heroBestBadge: document.getElementById("heroBestBadge"),
+  heroWeakBadge: document.getElementById("heroWeakBadge"),
   seasonPoints: document.getElementById("seasonPoints"),
   coins: document.getElementById("coins"),
   hints: document.getElementById("hints"),
@@ -65,9 +69,19 @@ const refs = {
   leaderboardList: document.getElementById("leaderboardList"),
   bestCategory: document.getElementById("bestCategory"),
   weakCategory: document.getElementById("weakCategory"),
+  clanQuickLetter: document.getElementById("clanQuickLetter"),
+  clanQuickName: document.getElementById("clanQuickName"),
+  clanQuickMeta: document.getElementById("clanQuickMeta"),
+  clanQuickScore: document.getElementById("clanQuickScore"),
+  clanQuickMembers: document.getElementById("clanQuickMembers"),
   categoryStats: document.getElementById("categoryStats"),
   tournamentList: document.getElementById("tournamentList"),
   clanList: document.getElementById("clanList"),
+  menuDrawer: document.getElementById("menuDrawer"),
+  menuToggle: document.getElementById("menuToggle"),
+  menuClose: document.getElementById("menuClose"),
+  clanMenuButton: document.getElementById("clanMenuButton"),
+  drawerBackdrop: document.getElementById("drawerBackdrop"),
   themeButtons: Array.from(document.querySelectorAll("[data-theme-option]")),
 };
 
@@ -77,6 +91,10 @@ refs.hintButton.addEventListener("click", useHint);
 refs.resetButton.addEventListener("click", resetProfile);
 refs.practiceCheckButton.addEventListener("click", checkPracticeAnswer);
 refs.challengeForm.addEventListener("submit", handleAnswerSubmit);
+refs.menuToggle.addEventListener("click", () => setDrawerOpen(true));
+refs.menuClose.addEventListener("click", () => setDrawerOpen(false));
+refs.clanMenuButton.addEventListener("click", () => setDrawerOpen(true));
+refs.drawerBackdrop.addEventListener("click", () => setDrawerOpen(false));
 refs.themeButtons.forEach((button) => {
   button.addEventListener("click", () => setTheme(button.dataset.themeOption));
 });
@@ -99,7 +117,12 @@ async function refreshBootstrap() {
 
 function renderBootstrap() {
   const { profile, insights, leaderboard, tournaments, clans, nemesis } = state.bootstrap;
+  const primaryClan = clans[0];
 
+  refs.playerName.textContent = profile.displayName;
+  refs.playerClan.textContent = profile.clanName;
+  refs.heroBestBadge.textContent = `Best: ${insights.best}`;
+  refs.heroWeakBadge.textContent = `Worst: ${insights.weak}`;
   refs.seasonPoints.textContent = profile.seasonPoints;
   refs.coins.textContent = profile.coins;
   refs.hints.textContent = profile.hints;
@@ -171,6 +194,12 @@ function renderBootstrap() {
     </div>
   `).join("");
 
+  refs.clanQuickLetter.textContent = primaryClan.name.charAt(0).toUpperCase();
+  refs.clanQuickName.textContent = primaryClan.name;
+  refs.clanQuickMeta.textContent = `${primaryClan.status} - ${primaryClan.members} members`;
+  refs.clanQuickScore.textContent = primaryClan.score;
+  refs.clanQuickMembers.textContent = primaryClan.members;
+
   document.body.dataset.theme = profile.theme;
   refs.themeButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.themeOption === profile.theme);
@@ -183,6 +212,7 @@ function renderBootstrap() {
 async function startMatch(revengeMode) {
   try {
     clearTimers();
+    setDrawerOpen(false);
     document.body.classList.add("match-active");
     document.body.classList.add("match-entering");
     setTimeout(() => document.body.classList.remove("match-entering"), 900);
@@ -740,6 +770,7 @@ async function setTheme(theme) {
 async function resetProfile() {
   try {
     clearTimers();
+    setDrawerOpen(false);
     document.body.classList.remove("match-active");
     setPhaseState("idle");
     state.match = null;
@@ -850,6 +881,12 @@ function capitalize(value) {
 
 function renderError(message) {
   refs.announcement.textContent = `Server error: ${message}`;
+}
+
+function setDrawerOpen(open) {
+  document.body.classList.toggle("drawer-open", open);
+  refs.menuDrawer.setAttribute("aria-hidden", String(!open));
+  refs.drawerBackdrop.setAttribute("aria-hidden", String(!open));
 }
 
 function triggerScreenFlash(mode) {

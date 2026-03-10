@@ -13,16 +13,23 @@
   <div class="screen-flash" id="screenFlash" aria-hidden="true"></div>
   <main class="app-shell">
     <section class="hero-card panel">
+      <button class="menu-toggle" id="menuToggle" type="button">Menu</button>
       <div class="hero-copy">
         <p class="eyebrow">Social Puzzle Rivals</p>
-        <h1>Puzzle races built for rematches.</h1>
+        <div class="player-strip">
+          <div>
+            <span class="wallet-label">Player</span>
+            <strong id="playerName">You</strong>
+          </div>
+          <div class="player-pill" id="playerClan">Cipher Syndicate</div>
+        </div>
+        <h1>Ready for the next duel?</h1>
         <p class="hero-text">
-          Join a live-feeling lobby, learn the challenge in 12 seconds, and beat the room before the timer expires.
+          Jump into a live-feeling room, warm up fast, and try to outrun the rival who keeps chasing your spot.
         </p>
-        <div class="hero-stickers">
-          <span class="hero-sticker">Fast</span>
-          <span class="hero-sticker">Color Pop</span>
-          <span class="hero-sticker">Friend Battles</span>
+        <div class="hero-stickers hero-summary">
+          <span class="hero-sticker" id="heroBestBadge">Best: No data</span>
+          <span class="hero-sticker" id="heroWeakBadge">Worst: No data</span>
         </div>
       </div>
       <div class="hero-art" aria-hidden="true">
@@ -55,7 +62,7 @@
       <section class="panel stage-panel candy-panel">
         <div class="panel-head">
           <div>
-            <p class="eyebrow">Match Flow</p>
+            <p class="eyebrow">Find Match</p>
             <h2 id="phaseTitle">Ready For Queue</h2>
           </div>
           <span class="phase-badge" id="phaseBadge">Idle</span>
@@ -80,7 +87,6 @@
           <button class="action-button primary" id="joinButton">Join Lobby</button>
           <button class="action-button secondary" id="revengeButton" disabled>Revenge Match</button>
           <button class="action-button ghost" id="hintButton" disabled>Use Hint</button>
-          <button class="action-button secondary" id="resetButton">Reset Profile</button>
         </div>
 
         <div class="match-copy" id="announcement">
@@ -174,8 +180,8 @@
       <section class="panel candy-panel">
         <div class="panel-head">
           <div>
-            <p class="eyebrow">Performance AI</p>
-            <h2>Strengths & Weaknesses</h2>
+            <p class="eyebrow">Performance</p>
+            <h2>Best & Worst</h2>
           </div>
         </div>
         <div class="duo-metrics">
@@ -188,54 +194,75 @@
             <strong id="weakCategory">No data</strong>
           </div>
         </div>
-        <div class="category-stats" id="categoryStats"></div>
-        <div class="nemesis-panel" id="nemesisPanel"></div>
       </section>
 
-      <section class="panel candy-panel">
+      <section class="panel candy-panel clan-quick-panel">
         <div class="panel-head">
           <div>
-            <p class="eyebrow">Live Ops</p>
-            <h2>Tournaments & Clans</h2>
+            <p class="eyebrow">Clan Quick Access</p>
+            <h2>Your Clan</h2>
           </div>
         </div>
-        <div class="meta-stack">
-          <div>
-            <p class="practice-label">Daily Tournaments</p>
-            <div class="meta-list" id="tournamentList"></div>
+        <div class="clan-quick-card">
+          <div class="row-main">
+            <span class="avatar-stack">
+              <img class="avatar-frame-img" src="assets/avatar-frame-star.svg" alt="">
+              <span class="avatar-letter" id="clanQuickLetter">C</span>
+            </span>
+            <div>
+              <strong id="clanQuickName">Cipher Syndicate</strong>
+              <div class="board-subtle" id="clanQuickMeta">Your clan</div>
+            </div>
           </div>
-          <div>
-            <p class="practice-label">Clan Race</p>
-            <div class="meta-list" id="clanList"></div>
+          <div class="clan-quick-stats">
+            <div>
+              <span class="wallet-label">Score</span>
+              <strong id="clanQuickScore">0</strong>
+            </div>
+            <div>
+              <span class="wallet-label">Members</span>
+              <strong id="clanQuickMembers">0</strong>
+            </div>
           </div>
         </div>
+        <button class="action-button ghost" id="clanMenuButton" type="button">Open Clan Menu</button>
       </section>
-
-      <section class="panel candy-panel">
-        <div class="panel-head">
-          <div>
-            <p class="eyebrow">Cosmetics</p>
-            <h2>Puzzle Themes</h2>
-          </div>
-        </div>
-        <div class="theme-picker">
-          <button class="theme-button active" data-theme-option="cyber">Cyber</button>
-          <button class="theme-button" data-theme-option="fantasy">Fantasy</button>
-          <button class="theme-button" data-theme-option="neon">Neon</button>
-        </div>
-      </section>
-    </section>
-
-    <section class="panel leaderboard-panel candy-panel">
-      <div class="panel-head">
-        <div>
-          <p class="eyebrow">Leaderboard</p>
-          <h2>Season Standings</h2>
-        </div>
-      </div>
-      <div class="leaderboard-list" id="leaderboardList"></div>
     </section>
   </main>
+
+  <aside class="menu-drawer" id="menuDrawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div>
+        <p class="eyebrow">Quick Menu</p>
+        <h2>More Stuff</h2>
+      </div>
+      <button class="drawer-close" id="menuClose" type="button">Close</button>
+    </div>
+    <div class="drawer-body">
+      <section class="drawer-panel">
+        <p class="practice-label">Nemesis</p>
+        <div class="nemesis-panel" id="nemesisPanel"></div>
+      </section>
+      <section class="drawer-panel">
+        <p class="practice-label">Detailed Stats</p>
+        <div class="category-stats" id="categoryStats"></div>
+      </section>
+      <section class="drawer-panel">
+        <p class="practice-label">Leaderboard</p>
+        <div class="leaderboard-list" id="leaderboardList"></div>
+      </section>
+      <section class="drawer-panel">
+        <p class="practice-label">Tournaments</p>
+        <div class="meta-list" id="tournamentList"></div>
+      </section>
+      <section class="drawer-panel">
+        <p class="practice-label">Clan Details</p>
+        <div class="meta-list" id="clanList"></div>
+      </section>
+      <button class="action-button secondary" id="resetButton" type="button">Reset Profile</button>
+    </div>
+  </aside>
+  <div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
 
   <script src="app.js"></script>
 </body>
