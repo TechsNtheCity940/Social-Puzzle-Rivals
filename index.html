@@ -64,6 +64,7 @@
           <button class="action-button primary" id="joinButton">Join Lobby</button>
           <button class="action-button secondary" id="revengeButton" disabled>Revenge Match</button>
           <button class="action-button ghost" id="hintButton" disabled>Use Hint</button>
+          <button class="action-button secondary" id="resetButton">Reset Profile</button>
         </div>
 
         <div class="match-copy" id="announcement">
@@ -135,23 +136,19 @@
       <section class="panel">
         <div class="panel-head">
           <div>
-            <p class="eyebrow">Social Hooks</p>
-            <h2>Retention Loop</h2>
+            <p class="eyebrow">Live Ops</p>
+            <h2>Tournaments & Clans</h2>
           </div>
         </div>
-        <div class="social-cards">
-          <article class="social-card">
-            <strong>Daily Tournament</strong>
-            <p>Three rotating puzzle playlists with a fresh prize pool every day.</p>
-          </article>
-          <article class="social-card">
-            <strong>Friend Leaderboard</strong>
-            <p>Season points are stacked against your bot-friend roster for quick bragging rights.</p>
-          </article>
-          <article class="social-card">
-            <strong>Clan Teams</strong>
-            <p>Build weekly score totals with your crew once live multiplayer lands.</p>
-          </article>
+        <div class="meta-stack">
+          <div>
+            <p class="practice-label">Daily Tournaments</p>
+            <div class="meta-list" id="tournamentList"></div>
+          </div>
+          <div>
+            <p class="practice-label">Clan Race</p>
+            <div class="meta-list" id="clanList"></div>
+          </div>
         </div>
       </section>
 

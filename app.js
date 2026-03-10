@@ -1,11 +1,5 @@
-const STORAGE_KEY = "social-puzzle-rivals-v1";
-const RIVAL_NAMES = [
-  "Nova", "Jinx", "Rune", "Pixel", "Echo", "Mosaic", "Vanta", "Quill", "Drift", "Sable"
-];
-
-const appState = {
-  profile: loadProfile(),
-  stats: null,
+const state = {
+  bootstrap: null,
   match: null,
   timers: {
     countdown: null,
@@ -30,6 +24,7 @@ const refs = {
   joinButton: document.getElementById("joinButton"),
   revengeButton: document.getElementById("revengeButton"),
   hintButton: document.getElementById("hintButton"),
+  resetButton: document.getElementById("resetButton"),
   practiceCard: document.getElementById("practiceCard"),
   challengeForm: document.getElementById("challengeForm"),
   challengeTitle: document.getElementById("challengeTitle"),
@@ -46,225 +41,171 @@ const refs = {
   bestCategory: document.getElementById("bestCategory"),
   weakCategory: document.getElementById("weakCategory"),
   categoryStats: document.getElementById("categoryStats"),
+  tournamentList: document.getElementById("tournamentList"),
+  clanList: document.getElementById("clanList"),
   themeButtons: Array.from(document.querySelectorAll("[data-theme-option]")),
 };
-
-const puzzleFactories = [
-  createCrosswordMini,
-  createAnagramBlitz,
-  createMissingLetterDash,
-  createLogicSequence,
-  createEmojiTrivia,
-  createMemoryGrid,
-];
 
 refs.joinButton.addEventListener("click", () => startMatch(false));
 refs.revengeButton.addEventListener("click", () => startMatch(true));
 refs.hintButton.addEventListener("click", useHint);
+refs.resetButton.addEventListener("click", resetProfile);
 refs.challengeForm.addEventListener("submit", handleAnswerSubmit);
 refs.themeButtons.forEach((button) => {
   button.addEventListener("click", () => setTheme(button.dataset.themeOption));
 });
 
-hydrate();
+boot();
 
-function hydrate() {
-  appState.stats = buildStatsSummary(appState.profile.performance);
-  document.body.dataset.theme = appState.profile.theme;
-  refs.themeButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.themeOption === appState.profile.theme);
-  });
-  renderWallet();
-  renderInsights();
-  renderLeaderboard();
-  renderRivals([]);
-}
-
-function loadProfile() {
-  const fallback = {
-    seasonPoints: 120,
-    coins: 250,
-    hints: 3,
-    theme: "cyber",
-    lastWinner: "",
-    leaderboard: [],
-    performance: {},
-  };
-
+async function boot() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return parsed ? { ...fallback, ...parsed } : fallback;
-  } catch {
-    return fallback;
+    await refreshBootstrap();
+    renderRivals([]);
+  } catch (error) {
+    renderError(error.message);
   }
 }
 
-function persistProfile() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.profile));
+async function refreshBootstrap() {
+  state.bootstrap = await api("/api/bootstrap");
+  renderBootstrap();
 }
 
-function startMatch(isRevenge) {
-  clearTimers();
-  refs.joinButton.disabled = true;
-  refs.revengeButton.disabled = true;
-  refs.resultsCard.classList.add("hidden");
-  refs.challengeForm.classList.add("hidden");
-  refs.practiceCard.classList.remove("hidden");
-  refs.phaseTitle.textContent = "Filling Lobby";
-  refs.phaseBadge.textContent = "Queue";
-  refs.modeLabel.textContent = isRevenge ? "Revenge Match" : "Ranked Sprint";
-  refs.announcement.textContent = isRevenge
-    ? "AI selected revenge mode. Expect a category that usually slows you down."
-    : "Matchmaking in progress. Puzzle type will be announced when the room fills.";
+function renderBootstrap() {
+  const { profile, insights, leaderboard, tournaments, clans } = state.bootstrap;
 
-  const puzzle = selectPuzzle(isRevenge);
-  const rivals = buildRivals(puzzle.difficulty);
-  const roundSeconds = randomNumber(45, 90);
+  refs.seasonPoints.textContent = profile.seasonPoints;
+  refs.coins.textContent = profile.coins;
+  refs.hints.textContent = profile.hints;
+  refs.bestCategory.textContent = insights.best;
+  refs.weakCategory.textContent = insights.weak;
+  refs.categoryStats.innerHTML = insights.rows.length
+    ? insights.rows.map((row) => `
+      <div class="category-row">
+        <strong>${row.label}</strong>
+        <span class="board-subtle">${row.wins}/${row.plays} wins - avg ${row.avg}s</span>
+      </div>
+    `).join("")
+    : '<div class="category-row"><strong>No matches yet</strong><span class="board-subtle">Play a round to train the rivalry AI.</span></div>';
 
-  appState.match = {
-    isRevenge,
-    puzzle,
-    rivals,
-    roundSeconds,
-    penalties: 0,
-    startedAt: 0,
-    playerSolved: false,
-    selectedChoice: "",
-    selectedCells: [],
-    hintUsed: false,
-    elapsedSeconds: 0,
-  };
+  refs.leaderboardList.innerHTML = leaderboard.map((entry) => `
+    <article class="board-row">
+      <div class="board-main">
+        <strong>#${entry.rank} ${entry.name}</strong>
+        <span>${entry.points} pts</span>
+      </div>
+      <div class="board-subtle">${entry.subtitle}</div>
+    </article>
+  `).join("");
 
-  renderRivals(rivals);
-  refs.puzzleLabel.textContent = puzzle.name;
-  refs.practiceTitle.textContent = `${puzzle.name} incoming`;
-  refs.practiceBody.textContent = puzzle.practice;
-  refs.countdownBadge.textContent = "12s";
-  refs.roundClock.textContent = `${roundSeconds}s`;
+  refs.tournamentList.innerHTML = tournaments.map((entry) => `
+    <div class="meta-row">
+      <strong>${entry.name}</strong>
+      <div class="board-subtle">${entry.window} - ${entry.focus}</div>
+      <div class="board-subtle">Prize: ${entry.prize}</div>
+    </div>
+  `).join("");
 
-  let remaining = 12;
-  refs.phaseTitle.textContent = "Practice Window";
-  refs.phaseBadge.textContent = "Warm-up";
+  refs.clanList.innerHTML = clans.map((entry) => `
+    <div class="meta-row">
+      <strong>${entry.name}</strong>
+      <div class="board-subtle">${entry.status} - ${entry.members} members</div>
+      <div class="board-subtle">${entry.score} total score</div>
+    </div>
+  `).join("");
 
-  refs.timers.countdown = setInterval(() => {
-    remaining -= 1;
-    refs.countdownBadge.textContent = `${remaining}s`;
-    if (remaining <= 0) {
-      clearInterval(refs.timers.countdown);
-      refs.timers.countdown = null;
-      beginRound();
-    }
-  }, 1000);
+  document.body.dataset.theme = profile.theme;
+  refs.themeButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.themeOption === profile.theme);
+  });
+
+  refs.revengeButton.disabled = !profile.lastWinner || profile.lastWinner === "You";
+  refs.hintButton.disabled = !state.match || profile.hints <= 0 || state.match.hintUsed || refs.challengeForm.classList.contains("hidden");
+}
+
+async function startMatch(revengeMode) {
+  try {
+    clearTimers();
+    refs.joinButton.disabled = true;
+    refs.revengeButton.disabled = true;
+    refs.hintButton.disabled = true;
+    refs.resultsCard.classList.add("hidden");
+    refs.challengeForm.classList.add("hidden");
+    refs.practiceCard.classList.remove("hidden");
+    refs.phaseTitle.textContent = "Filling Lobby";
+    refs.phaseBadge.textContent = "Queue";
+    refs.modeLabel.textContent = revengeMode ? "Revenge Match" : "Ranked Sprint";
+    refs.announcement.textContent = revengeMode
+      ? "AI selected revenge mode. Expect a category that usually slows you down."
+      : "Matchmaking in progress. Puzzle type will be announced when the room fills.";
+
+    state.match = await api("/api/matchmaking/join", {
+      method: "POST",
+      body: JSON.stringify({ revengeMode }),
+    });
+
+    state.match.penalties = 0;
+    state.match.hintUsed = false;
+    state.match.selectedChoice = "";
+    state.match.selectedCells = [];
+
+    renderRivals(state.match.rivals);
+    refs.puzzleLabel.textContent = state.match.puzzle.name;
+    refs.practiceTitle.textContent = `${state.match.puzzle.name} incoming`;
+    refs.practiceBody.textContent = state.match.puzzle.practice;
+    refs.countdownBadge.textContent = `${state.match.practiceSeconds}s`;
+    refs.roundClock.textContent = `${state.match.roundSeconds}s`;
+    refs.phaseTitle.textContent = "Practice Window";
+    refs.phaseBadge.textContent = "Warm-up";
+
+    let remaining = state.match.practiceSeconds;
+    refs.timers.countdown = setInterval(() => {
+      remaining -= 1;
+      refs.countdownBadge.textContent = `${remaining}s`;
+      if (remaining <= 0) {
+        clearInterval(refs.timers.countdown);
+        refs.timers.countdown = null;
+        beginRound();
+      }
+    }, 1000);
+  } catch (error) {
+    renderError(error.message);
+    refs.joinButton.disabled = false;
+    renderBootstrap();
+  }
 }
 
 function beginRound() {
-  const { puzzle, roundSeconds } = appState.match;
-  appState.match.startedAt = Date.now();
+  state.match.startedAt = Date.now();
   refs.phaseTitle.textContent = "Race Live";
   refs.phaseBadge.textContent = "Live";
-  refs.announcement.textContent = `${puzzle.tagline} First correct solve takes the room. Wrong answers cost 5 seconds.`;
-  refs.challengeTitle.textContent = puzzle.name;
-  refs.challengePrompt.textContent = puzzle.prompt;
+  refs.challengeTitle.textContent = state.match.puzzle.name;
+  refs.challengePrompt.textContent = state.match.puzzle.prompt;
   refs.penaltyChip.textContent = "Penalty +0s";
   refs.hintCopy.textContent = "Hints reveal a clue or remove one wrong option.";
   refs.challengeForm.classList.remove("hidden");
-  refs.hintButton.disabled = appState.profile.hints <= 0;
+  refs.announcement.textContent = `${state.match.puzzle.tagline} First correct solve takes the room. Wrong answers cost 5 seconds.`;
+  refs.hintButton.disabled = state.bootstrap.profile.hints <= 0;
 
-  renderWorkspace(puzzle);
-  tickRoundClock(roundSeconds);
-  refs.roundClock.textContent = `${roundSeconds}s`;
+  renderWorkspace(state.match.puzzle);
+  tickRoundClock(state.match.roundSeconds);
 
   refs.timers.round = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - appState.match.startedAt) / 1000);
-    appState.match.elapsedSeconds = elapsed;
-    const remaining = Math.max(roundSeconds - elapsed, 0);
+    const elapsed = Math.floor((Date.now() - state.match.startedAt) / 1000);
+    const remaining = Math.max(state.match.roundSeconds - elapsed, 0);
     tickRoundClock(remaining);
     if (remaining <= 0) {
-      finishRound(false);
+      submitTimeout();
     }
   }, 250);
 
-  refs.timers.rivals = setInterval(updateRivalProgress, 400);
-}
-
-function tickRoundClock(remaining) {
-  refs.roundClock.textContent = `${remaining}s`;
-}
-
-function selectPuzzle(isRevenge) {
-  const weighted = puzzleFactories.map((factory) => {
-    const preview = factory();
-    const stats = appState.profile.performance[preview.id];
-    const failureWeight = !stats
-      ? 1
-      : 1 + Math.max(0, stats.plays - stats.wins) + Math.floor((stats.totalTime || 0) / Math.max(stats.plays || 1, 1) / 20);
-    const weight = isRevenge ? failureWeight : 1;
-    return { factory, weight };
-  });
-
-  const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
-  let cursor = Math.random() * totalWeight;
-  for (const item of weighted) {
-    cursor -= item.weight;
-    if (cursor <= 0) {
-      return item.factory();
-    }
-  }
-  return weighted[0].factory();
-}
-
-function buildRivals(difficulty) {
-  return shuffle([...RIVAL_NAMES])
-    .slice(0, 5)
-    .map((name, index) => {
-      const speedBase = randomNumber(20, 65) + difficulty * 5 + index * 2;
-      return {
-        name,
-        mmr: randomNumber(1180, 1610),
-        finishTime: speedBase,
-        progress: 0,
-        status: "waiting",
-      };
-    });
-}
-
-function renderRivals(rivals) {
-  if (!rivals.length) {
-    refs.rivalsList.innerHTML = '<div class="rival-row"><div class="rival-main"><strong>No lobby yet</strong><span class="rival-meta">Tap Join Lobby to queue</span></div></div>';
-    return;
-  }
-
-  refs.rivalsList.innerHTML = rivals.map((rival) => `
-    <article class="rival-row" data-rival-name="${rival.name}">
-      <div class="rival-main">
-        <strong>${rival.name}</strong>
-        <span class="rival-meta">${rival.mmr} MMR • ${capitalize(rival.status)}</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" style="width:${rival.progress}%"></div>
-      </div>
-    </article>
-  `).join("");
-}
-
-function updateRivalProgress() {
-  if (!appState.match) {
-    return;
-  }
-
-  const elapsed = (Date.now() - appState.match.startedAt) / 1000;
-  appState.match.rivals.forEach((rival) => {
-    const progress = Math.min((elapsed / rival.finishTime) * 100, 100);
-    rival.progress = Math.round(progress);
-    rival.status = progress >= 100 ? "finished" : "solving";
-  });
-  renderRivals(appState.match.rivals);
+  refs.timers.rivals = setInterval(updateRivalProgress, 350);
 }
 
 function renderWorkspace(puzzle) {
   refs.challengeWorkspace.innerHTML = "";
-  appState.match.selectedChoice = "";
-  appState.match.selectedCells = [];
+  state.match.selectedChoice = "";
+  state.match.selectedCells = [];
 
   if (puzzle.kind === "text") {
     refs.challengeWorkspace.innerHTML = `<input class="answer-input" id="answerInput" type="text" autocomplete="off" placeholder="${puzzle.placeholder}">`;
@@ -281,7 +222,7 @@ function renderWorkspace(puzzle) {
       button.className = "choice-button";
       button.textContent = option;
       button.addEventListener("click", () => {
-        appState.match.selectedChoice = option;
+        state.match.selectedChoice = option;
         Array.from(grid.children).forEach((child) => child.classList.remove("selected"));
         button.classList.add("selected");
       });
@@ -304,433 +245,258 @@ function renderWorkspace(puzzle) {
       button.type = "button";
       button.className = "memory-button";
       button.textContent = cellIndex + 1;
-      if (puzzle.answer.includes(cellIndex)) {
+      button.dataset.cellIndex = String(cellIndex);
+      if (puzzle.previewCells.includes(cellIndex)) {
         button.classList.add("glow");
       }
       button.addEventListener("click", () => {
         button.classList.toggle("selected");
-        const selected = Array.from(grid.children)
+        state.match.selectedCells = Array.from(grid.children)
           .filter((child) => child.classList.contains("selected"))
-          .map((child, index) => index);
-        appState.match.selectedCells = selected;
+          .map((child) => Number(child.dataset.cellIndex));
       });
       grid.appendChild(button);
     });
     refs.challengeWorkspace.appendChild(grid);
-
     setTimeout(() => {
       Array.from(grid.children).forEach((child) => child.classList.remove("glow"));
     }, 3000);
   }
 }
 
-function handleAnswerSubmit(event) {
+async function handleAnswerSubmit(event) {
   event.preventDefault();
-  if (!appState.match || appState.match.playerSolved) {
+  if (!state.match) {
     return;
   }
 
-  const { puzzle } = appState.match;
-  let solved = false;
+  try {
+    const payload = buildSubmitPayload(false);
+    const result = await api(`/api/matches/${state.match.id}/submit`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
 
-  if (puzzle.kind === "text") {
-    const value = document.getElementById("answerInput").value.trim();
-    solved = normalize(value) === normalize(puzzle.answer);
-  }
-
-  if (puzzle.kind === "choice") {
-    solved = appState.match.selectedChoice === puzzle.answer;
-  }
-
-  if (puzzle.kind === "memory") {
-    solved = sameCells(appState.match.selectedCells, puzzle.answer);
-  }
-
-  if (solved) {
-    finishRound(true);
-    return;
-  }
-
-  appState.match.penalties += 5;
-  refs.penaltyChip.textContent = `Penalty +${appState.match.penalties}s`;
-  refs.challengeForm.classList.add("flash");
-  setTimeout(() => refs.challengeForm.classList.remove("flash"), 500);
-}
-
-function useHint() {
-  if (!appState.match || appState.profile.hints <= 0 || appState.match.hintUsed) {
-    return;
-  }
-
-  appState.match.hintUsed = true;
-  appState.profile.hints -= 1;
-  refs.hintButton.disabled = true;
-  refs.hintCopy.textContent = appState.match.puzzle.hint;
-  persistProfile();
-  renderWallet();
-
-  if (appState.match.puzzle.kind === "choice") {
-    const wrongButtons = Array.from(refs.challengeWorkspace.querySelectorAll(".choice-button"))
-      .filter((button) => button.textContent !== appState.match.puzzle.answer);
-    if (wrongButtons.length) {
-      wrongButtons[0].disabled = true;
-      wrongButtons[0].style.opacity = "0.35";
+    if (result.finished) {
+      applyFinishedMatch(result);
+      return;
     }
+
+    state.match.penalties += 5;
+    refs.penaltyChip.textContent = `Penalty +${state.match.penalties}s`;
+    refs.challengeForm.classList.add("flash");
+    setTimeout(() => refs.challengeForm.classList.remove("flash"), 500);
+  } catch (error) {
+    renderError(error.message);
   }
 }
 
-function finishRound(playerSolved) {
-  if (!appState.match) {
+async function submitTimeout() {
+  if (!state.match) {
     return;
   }
 
+  try {
+    const result = await api(`/api/matches/${state.match.id}/submit`, {
+      method: "POST",
+      body: JSON.stringify({ timedOut: true }),
+    });
+    applyFinishedMatch(result);
+  } catch (error) {
+    renderError(error.message);
+  }
+}
+
+function buildSubmitPayload(timedOut) {
+  const elapsedSeconds = ((Date.now() - state.match.startedAt) / 1000);
+  const payload = {
+    timedOut,
+    elapsedSeconds,
+    penalties: state.match.penalties,
+  };
+
+  if (state.match.puzzle.kind === "text") {
+    payload.answer = document.getElementById("answerInput").value.trim();
+  }
+
+  if (state.match.puzzle.kind === "choice") {
+    payload.choice = state.match.selectedChoice;
+  }
+
+  if (state.match.puzzle.kind === "memory") {
+    payload.cells = state.match.selectedCells;
+  }
+
+  return payload;
+}
+
+async function useHint() {
+  if (!state.match || state.match.hintUsed) {
+    return;
+  }
+
+  try {
+    const result = await api(`/api/matches/${state.match.id}/hint`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    state.match.hintUsed = true;
+    state.bootstrap.profile = result.profile;
+    refs.hintCopy.textContent = result.hint;
+    refs.hintButton.disabled = true;
+    refs.hints.textContent = result.profile.hints;
+
+    if (state.match.puzzle.kind === "choice" && result.removeOption) {
+      const wrongButtons = Array.from(refs.challengeWorkspace.querySelectorAll(".choice-button"))
+        .filter((button) => button.textContent === result.removeOption);
+      if (wrongButtons.length) {
+        wrongButtons[0].disabled = true;
+        wrongButtons[0].style.opacity = "0.35";
+      }
+    }
+  } catch (error) {
+    renderError(error.message);
+  }
+}
+
+function applyFinishedMatch(result) {
   clearTimers();
-  appState.match.playerSolved = playerSolved;
   refs.challengeForm.classList.add("hidden");
   refs.resultsCard.classList.remove("hidden");
   refs.phaseTitle.textContent = "Results";
   refs.phaseBadge.textContent = "Final";
   refs.hintButton.disabled = true;
 
-  const elapsed = playerSolved
-    ? ((Date.now() - appState.match.startedAt) / 1000) + appState.match.penalties
-    : Number.POSITIVE_INFINITY;
+  state.bootstrap = result.bootstrap;
+  state.match = null;
+  renderBootstrap();
+  renderRivals([]);
 
-  const standings = [
-    ...appState.match.rivals.map((rival) => ({ name: rival.name, time: rival.finishTime })),
-    { name: "You", time: elapsed },
-  ].sort((a, b) => a.time - b.time);
-
-  const placement = standings.findIndex((entry) => entry.name === "You") + 1;
-  const topThree = standings.slice(0, 3);
-  const reward = getReward(placement);
-
-  if (playerSolved && Number.isFinite(elapsed)) {
-    appState.profile.seasonPoints += reward.points;
-    appState.profile.coins += reward.coins;
-  }
-
-  const performanceEntry = appState.profile.performance[appState.match.puzzle.id] || {
-    label: appState.match.puzzle.name,
-    category: appState.match.puzzle.category,
-    plays: 0,
-    wins: 0,
-    totalTime: 0,
-  };
-  performanceEntry.plays += 1;
-  if (placement === 1) {
-    performanceEntry.wins += 1;
-  }
-  if (Number.isFinite(elapsed)) {
-    performanceEntry.totalTime += Math.round(elapsed);
-  } else {
-    performanceEntry.totalTime += appState.match.roundSeconds + appState.match.penalties;
-  }
-  appState.profile.performance[appState.match.puzzle.id] = performanceEntry;
-
-  appState.profile.lastWinner = standings[0].name;
-  appState.profile.leaderboard = [
-    {
-      date: new Date().toLocaleDateString(),
-      placement,
-      puzzle: appState.match.puzzle.name,
-      time: Number.isFinite(elapsed) ? `${elapsed.toFixed(1)}s` : "DNF",
-      points: reward.points,
-    },
-    ...appState.profile.leaderboard,
-  ].slice(0, 8);
-
-  persistProfile();
-  appState.stats = buildStatsSummary(appState.profile.performance);
-  renderWallet();
-  renderInsights();
-  renderLeaderboard();
-
-  refs.resultsTitle.textContent = placement <= 3 ? `You placed #${placement}` : "You missed the podium";
-  refs.resultsBody.textContent = playerSolved
-    ? `Solved in ${elapsed.toFixed(1)}s. Reward: +${reward.points} season points and +${reward.coins} coins.`
+  refs.resultsTitle.textContent = result.placement <= 3 ? `You placed #${result.placement}` : "You missed the podium";
+  refs.resultsBody.textContent = result.correct
+    ? `Solved in ${result.elapsedSeconds.toFixed(1)}s. Reward: +${result.reward.points} season points and +${result.reward.coins} coins.`
     : "Time expired before you locked the answer. Queue again or trigger revenge mode.";
-  refs.podium.innerHTML = topThree.map((entry, index) => `
+  refs.podium.innerHTML = result.podium.map((entry) => `
     <div class="podium-place">
-      <div>#${index + 1}</div>
+      <div>#${entry.rank}</div>
       <strong>${entry.name}</strong>
-      <div class="board-subtle">${Number.isFinite(entry.time) ? `${entry.time.toFixed(1)}s` : "DNF"}</div>
+      <div class="board-subtle">${entry.time ? `${entry.time.toFixed(1)}s` : "DNF"}</div>
     </div>
   `).join("");
 
-  refs.announcement.textContent = placement === 1
+  refs.announcement.textContent = result.placement === 1
     ? "First place secured. Queue again before the room cools off."
-    : `Winner: ${standings[0].name}. Revenge mode is tuned to your weaker categories for a harder rematch.`;
-  refs.revengeButton.disabled = !appState.profile.lastWinner || appState.profile.lastWinner === "You";
+    : `Winner: ${result.winner}. Revenge mode is tuned to your weaker categories for a harder rematch.`;
   refs.joinButton.disabled = false;
   refs.modeLabel.textContent = "Post Match";
-  refs.puzzleLabel.textContent = appState.match.puzzle.name;
-  refs.roundClock.textContent = playerSolved ? `${elapsed.toFixed(1)}s` : "DNF";
+  refs.roundClock.textContent = result.elapsedSeconds ? `${result.elapsedSeconds.toFixed(1)}s` : "DNF";
 }
 
-function renderWallet() {
-  refs.seasonPoints.textContent = appState.profile.seasonPoints;
-  refs.coins.textContent = appState.profile.coins;
-  refs.hints.textContent = appState.profile.hints;
-}
+function renderRivals(rivals) {
+  if (!rivals.length) {
+    refs.rivalsList.innerHTML = '<div class="rival-row"><div class="rival-main"><strong>No lobby yet</strong><span class="rival-meta">Tap Join Lobby to queue</span></div></div>';
+    return;
+  }
 
-function renderInsights() {
-  const { best, weak, rows } = appState.stats;
-  refs.bestCategory.textContent = best || "No data";
-  refs.weakCategory.textContent = weak || "No data";
-  refs.categoryStats.innerHTML = rows.length
-    ? rows.map((row) => `
-      <div class="category-row">
-        <strong>${row.label}</strong>
-        <span class="board-subtle">${row.wins}/${row.plays} wins • avg ${row.avg}s</span>
+  refs.rivalsList.innerHTML = rivals.map((rival) => `
+    <article class="rival-row">
+      <div class="rival-main">
+        <strong>${rival.name}</strong>
+        <span class="rival-meta">${rival.mmr} MMR - ${capitalize(rival.status)}</span>
       </div>
-    `).join("")
-    : '<div class="category-row"><strong>No matches yet</strong><span class="board-subtle">Play a round to train the AI profile.</span></div>';
-}
-
-function renderLeaderboard() {
-  const baseBots = [
-    { name: "Nova", points: 960 },
-    { name: "Rune", points: 900 },
-    { name: "Echo", points: 860 },
-    { name: "You", points: appState.profile.seasonPoints },
-    { name: "Pixel", points: 790 },
-  ].sort((a, b) => b.points - a.points);
-
-  refs.leaderboardList.innerHTML = baseBots.map((entry, index) => `
-    <article class="board-row">
-      <div class="board-main">
-        <strong>#${index + 1} ${entry.name}</strong>
-        <span>${entry.points} pts</span>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:${rival.progress}%"></div>
       </div>
-      <div class="board-subtle">${entry.name === "You" ? latestMatchText() : "Friend leaderboard snapshot"}</div>
     </article>
   `).join("");
 }
 
-function latestMatchText() {
-  const latest = appState.profile.leaderboard[0];
-  if (!latest) {
-    return "Your first ranked result will appear here.";
+function updateRivalProgress() {
+  if (!state.match) {
+    return;
   }
-  return `${latest.puzzle} • ${latest.time} • ${latest.points} pts`;
-}
 
-function setTheme(theme) {
-  appState.profile.theme = theme;
-  document.body.dataset.theme = theme;
-  refs.themeButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.themeOption === theme);
+  const elapsed = (Date.now() - state.match.startedAt) / 1000;
+  state.match.rivals.forEach((rival) => {
+    const progress = Math.min((elapsed / rival.finishTime) * 100, 100);
+    rival.progress = Math.round(progress);
+    rival.status = progress >= 100 ? "finished" : "solving";
   });
-  persistProfile();
+  renderRivals(state.match.rivals);
 }
 
-function buildStatsSummary(performance) {
-  const entries = Object.values(performance).map((entry) => ({
-    ...entry,
-    avg: Math.round((entry.totalTime || 0) / Math.max(entry.plays || 1, 1)),
-    rating: entry.plays ? (entry.wins / entry.plays) - (((entry.totalTime || 0) / entry.plays) / 100) : -1,
-  }));
-
-  entries.sort((a, b) => b.rating - a.rating);
-  return {
-    best: entries[0]?.label || "",
-    weak: entries.at(-1)?.label || "",
-    rows: entries.slice(0, 6),
-  };
+async function setTheme(theme) {
+  try {
+    const result = await api("/api/profile/theme", {
+      method: "POST",
+      body: JSON.stringify({ theme }),
+    });
+    state.bootstrap.profile = result.profile;
+    renderBootstrap();
+  } catch (error) {
+    renderError(error.message);
+  }
 }
 
-function getReward(placement) {
-  if (placement === 1) {
-    return { points: 120, coins: 90 };
+async function resetProfile() {
+  try {
+    clearTimers();
+    state.match = null;
+    state.bootstrap = await api("/api/profile/reset", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    refs.resultsCard.classList.add("hidden");
+    refs.challengeForm.classList.add("hidden");
+    refs.phaseTitle.textContent = "Ready For Queue";
+    refs.phaseBadge.textContent = "Idle";
+    refs.modeLabel.textContent = "Ranked Sprint";
+    refs.puzzleLabel.textContent = "Waiting";
+    refs.roundClock.textContent = "--";
+    refs.practiceTitle.textContent = "No match active";
+    refs.practiceBody.textContent = "Each round announces the puzzle type, then gives you a short warm-up before the race begins.";
+    refs.countdownBadge.textContent = "--";
+    refs.announcement.textContent = "Profile reset. Queue up to start a ranked puzzle sprint.";
+    renderBootstrap();
+    renderRivals([]);
+    refs.joinButton.disabled = false;
+  } catch (error) {
+    renderError(error.message);
   }
-  if (placement === 2) {
-    return { points: 80, coins: 55 };
-  }
-  if (placement === 3) {
-    return { points: 50, coins: 30 };
-  }
-  return { points: 10, coins: 5 };
+}
+
+function tickRoundClock(remaining) {
+  refs.roundClock.textContent = `${remaining}s`;
 }
 
 function clearTimers() {
-  Object.keys(appState.timers).forEach((key) => {
-    if (appState.timers[key]) {
-      clearInterval(appState.timers[key]);
-      clearTimeout(appState.timers[key]);
-      appState.timers[key] = null;
+  Object.keys(state.timers).forEach((key) => {
+    if (state.timers[key]) {
+      clearInterval(state.timers[key]);
+      state.timers[key] = null;
     }
   });
-}
-
-function sameCells(selected, answer) {
-  if (selected.length !== answer.length) {
-    return false;
-  }
-  const left = [...selected].sort((a, b) => a - b);
-  const right = [...answer].sort((a, b) => a - b);
-  return left.every((value, index) => value === right[index]);
-}
-
-function normalize(value) {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function randomNumber(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function shuffle(list) {
-  const copy = [...list];
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
-  }
-  return copy;
 }
 
 function capitalize(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function createCrosswordMini() {
-  const bank = [
-    { clue: "Word for a brain teaser", answer: "puzzle", hint: "Starts with P and ends with E." },
-    { clue: "Competitive payback match", answer: "revenge", hint: "It begins with R." },
-    { clue: "Board that ranks players", answer: "leaderboard", hint: "It contains the word board." },
-  ];
-  const pick = bank[Math.floor(Math.random() * bank.length)];
-  return {
-    id: "crossword-mini",
-    name: "Crossword Mini",
-    category: "Word",
-    difficulty: 3,
-    kind: "text",
-    placeholder: "Type the answer",
-    prompt: `Solve the mini clue: ${pick.clue}`,
-    answer: pick.answer,
-    practice: "Mini crossword clues reward direct word association. Read the clue once, then lock the cleanest answer fast.",
-    hint: pick.hint,
-    tagline: "Crossword sprint is live.",
-  };
+function renderError(message) {
+  refs.announcement.textContent = `Server error: ${message}`;
 }
 
-function createAnagramBlitz() {
-  const bank = [
-    { scramble: "LZPUZE", answer: "puzzle", hint: "It starts with P." },
-    { scramble: "VLRAI", answer: "viral", hint: "It ends with L." },
-    { scramble: "VOTYRIC", answer: "victory", hint: "It starts with V." },
-  ];
-  const pick = bank[Math.floor(Math.random() * bank.length)];
-  return {
-    id: "anagram-blitz",
-    name: "Anagram Blitz",
-    category: "Word",
-    difficulty: 2,
-    kind: "text",
-    placeholder: "Unscramble the word",
-    prompt: `Unscramble this word: ${pick.scramble}`,
-    answer: pick.answer,
-    practice: "Scan for common starts like P, V, or RE. The fastest route is spotting patterns, not testing every letter order.",
-    hint: pick.hint,
-    tagline: "Anagram blitz is live.",
-  };
-}
-
-function createMissingLetterDash() {
-  const bank = [
-    { text: "C _ A N", answer: "clan", hint: "A team or guild." },
-    { text: "H I _ T", answer: "hint", hint: "You can spend one during the round." },
-    { text: "M A _ C H", answer: "match", hint: "It starts with M and ends with H." },
-  ];
-  const pick = bank[Math.floor(Math.random() * bank.length)];
-  return {
-    id: "missing-letter-dash",
-    name: "Missing-Letter Dash",
-    category: "Word",
-    difficulty: 2,
-    kind: "text",
-    placeholder: "Complete the word",
-    prompt: `Fill in the missing letters: ${pick.text}`,
-    answer: pick.answer,
-    practice: "Use the visible consonants as anchors. If the word is social or competitive, the theme is usually a clue.",
-    hint: pick.hint,
-    tagline: "Missing-letter dash is live.",
-  };
-}
-
-function createLogicSequence() {
-  const bank = [
-    { prompt: "What number comes next: 2, 6, 12, 20, ?", answer: "30", hint: "Add 4, then 6, then 8, then 10." },
-    { prompt: "What number comes next: 3, 9, 18, 30, ?", answer: "45", hint: "The increases are 6, 9, 12, then 15." },
-    { prompt: "What number comes next: 1, 4, 9, 16, ?", answer: "25", hint: "These are square numbers." },
-  ];
-  const pick = bank[Math.floor(Math.random() * bank.length)];
-  return {
-    id: "logic-sequence",
-    name: "Logic Sequence",
-    category: "Logic",
-    difficulty: 3,
-    kind: "text",
-    placeholder: "Enter the next number",
-    prompt: pick.prompt,
-    answer: pick.answer,
-    practice: "Compare differences first. Sequence puzzles collapse fast once you identify the increment rule.",
-    hint: pick.hint,
-    tagline: "Logic sequence is live.",
-  };
-}
-
-function createEmojiTrivia() {
-  const bank = [
-    {
-      prompt: "Which phrase do these emoji suggest? 🧠 + ⚔️",
-      answer: "Brain Battle",
-      options: ["Brain Battle", "Mind Garden", "Puzzle Crown"],
-      hint: "Second word is competitive.",
+async function api(url, options = {}) {
+  const response = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
     },
-    {
-      prompt: "Which phrase do these emoji suggest? 👥 + 🧩",
-      answer: "Friends Puzzle",
-      options: ["Friends Puzzle", "Clan Quest", "Neon Trivia"],
-      hint: "The first word points to a group of people.",
-    },
-    {
-      prompt: "Which phrase do these emoji suggest? ⚡ + 🧠",
-      answer: "Speed Thinking",
-      options: ["Speed Thinking", "Hint Storm", "Victory Rush"],
-      hint: "This phrase is about fast cognition.",
-    },
-  ];
-  const pick = bank[Math.floor(Math.random() * bank.length)];
-  return {
-    id: "emoji-trivia",
-    name: "Emoji Trivia",
-    category: "Trivia",
-    difficulty: 2,
-    kind: "choice",
-    prompt: pick.prompt,
-    answer: pick.answer,
-    options: shuffle(pick.options),
-    practice: "Look for the obvious literal meaning first. Emoji trivia punishes overthinking more than lack of knowledge.",
-    hint: pick.hint,
-    tagline: "Emoji trivia is live.",
-  };
-}
+    ...options,
+  });
 
-function createMemoryGrid() {
-  const answer = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 4).sort((a, b) => a - b);
-  return {
-    id: "memory-grid",
-    name: "Memory Grid",
-    category: "Memory",
-    difficulty: 4,
-    kind: "memory",
-    cells: [0, 1, 2, 3, 4, 5, 6, 7, 8],
-    prompt: "Rebuild the glowing pattern after it disappears.",
-    answer,
-    practice: "Chunk the grid into rows or corners. Visual grouping beats trying to memorize each tile separately.",
-    hint: `The pattern includes cells ${answer.slice(0, 2).map((value) => value + 1).join(" and ")}.`,
-    tagline: "Memory grid is live.",
-  };
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Request failed.");
+  }
+  return payload;
 }

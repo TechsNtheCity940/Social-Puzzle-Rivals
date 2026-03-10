@@ -208,6 +208,7 @@ body::before {
 .cta-row,
 .duo-metrics,
 .social-cards,
+.meta-list,
 .theme-picker,
 .podium {
   display: grid;
@@ -226,7 +227,7 @@ body::before {
 }
 
 .cta-row {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .action-button {
@@ -409,13 +410,27 @@ body::before {
 
 .duo-metrics,
 .social-cards,
+.meta-stack,
 .theme-picker {
   margin-top: 16px;
 }
 
 .social-cards,
+.meta-list,
 .theme-picker {
   grid-template-columns: 1fr;
+}
+
+.meta-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.meta-row {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .theme-button {

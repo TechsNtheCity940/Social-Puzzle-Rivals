@@ -1,0 +1,26 @@
+{
+  "name": "social-puzzle-rivals",
+  "version": "1.0.0",
+  "description": "Social Puzzle Rivals is a mobile-first social puzzle challenge app with an Express backend and browser client.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TechsNtheCity940/Social-Puzzle-Rivals.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/TechsNtheCity940/Social-Puzzle-Rivals/issues"
+  },
+  "homepage": "https://github.com/TechsNtheCity940/Social-Puzzle-Rivals#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

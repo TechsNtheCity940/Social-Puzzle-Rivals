@@ -1,0 +1,15 @@
+{
+  "createdAt": "2026-03-10T00:00:00.000Z",
+  "profile": {
+    "id": "local-player",
+    "displayName": "You",
+    "seasonPoints": 120,
+    "coins": 250,
+    "hints": 3,
+    "theme": "cyber",
+    "lastWinner": "",
+    "clanName": "Cipher Syndicate",
+    "leaderboard": [],
+    "performance": {}
+  }
+}
