@@ -43,6 +43,10 @@
           <span class="wallet-label">Hints</span>
           <strong id="hints">0</strong>
         </div>
+        <div class="wallet-item nemesis-card">
+          <span class="wallet-label">Nemesis</span>
+          <div class="nemesis-inline" id="nemesisInline"></div>
+        </div>
       </div>
     </section>
 
@@ -137,6 +141,13 @@
           <p id="resultsBody"></p>
           <div class="podium" id="podium"></div>
         </section>
+
+        <div class="countdown-overlay hidden" id="countdownOverlay" aria-hidden="true">
+          <div class="countdown-ring">
+            <span class="countdown-value" id="countdownValue">3</span>
+            <span class="countdown-label" id="countdownLabel">Get Ready</span>
+          </div>
+        </div>
       </section>
 
       <section class="panel rivals-panel candy-panel">
@@ -176,6 +187,7 @@
           </div>
         </div>
         <div class="category-stats" id="categoryStats"></div>
+        <div class="nemesis-panel" id="nemesisPanel"></div>
       </section>
 
       <section class="panel candy-panel">

@@ -68,6 +68,29 @@ test("player can join, hint, and finish a match", async () => {
   assert.equal(result.bootstrap.profile.hints, 2);
 });
 
+test("nemesis tracks the rival who beats the player most often", async () => {
+  await post("/api/profile/reset", {});
+
+  for (let index = 0; index < 2; index += 1) {
+    const match = await post("/api/matchmaking/join", {
+      revengeMode: false,
+      forcedPuzzleId: "logic-sequence",
+      forcedVariantIndex: 0,
+      forcedRivals: ["Nova", "Rune", "Echo", "Pixel", "Jinx"],
+    });
+
+    const result = await post(`/api/matches/${match.id}/submit`, {
+      timedOut: true,
+    });
+
+    assert.equal(result.winner, "Nova");
+  }
+
+  const bootstrap = await get("/api/bootstrap");
+  assert.equal(bootstrap.nemesis.name, "Nova");
+  assert.equal(bootstrap.nemesis.losses, 2);
+});
+
 async function post(route, body) {
   const response = await fetch(`${baseUrl}${route}`, {
     method: "POST",
@@ -77,6 +100,13 @@ async function post(route, body) {
     body: JSON.stringify(body),
   });
 
+  const payload = await response.json();
+  assert.equal(response.ok, true, payload.error || "Request failed");
+  return payload;
+}
+
+async function get(route) {
+  const response = await fetch(`${baseUrl}${route}`);
   const payload = await response.json();
   assert.equal(response.ok, true, payload.error || "Request failed");
   return payload;

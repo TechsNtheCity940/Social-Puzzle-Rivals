@@ -21,6 +21,8 @@ const refs = {
   seasonPoints: document.getElementById("seasonPoints"),
   coins: document.getElementById("coins"),
   hints: document.getElementById("hints"),
+  nemesisInline: document.getElementById("nemesisInline"),
+  nemesisPanel: document.getElementById("nemesisPanel"),
   phaseTitle: document.getElementById("phaseTitle"),
   phaseBadge: document.getElementById("phaseBadge"),
   modeLabel: document.getElementById("modeLabel"),
@@ -54,6 +56,9 @@ const refs = {
   resultsTitle: document.getElementById("resultsTitle"),
   resultsBody: document.getElementById("resultsBody"),
   podium: document.getElementById("podium"),
+  countdownOverlay: document.getElementById("countdownOverlay"),
+  countdownValue: document.getElementById("countdownValue"),
+  countdownLabel: document.getElementById("countdownLabel"),
   rivalsList: document.getElementById("rivalsList"),
   leaderboardList: document.getElementById("leaderboardList"),
   bestCategory: document.getElementById("bestCategory"),
@@ -91,11 +96,18 @@ async function refreshBootstrap() {
 }
 
 function renderBootstrap() {
-  const { profile, insights, leaderboard, tournaments, clans } = state.bootstrap;
+  const { profile, insights, leaderboard, tournaments, clans, nemesis } = state.bootstrap;
 
   refs.seasonPoints.textContent = profile.seasonPoints;
   refs.coins.textContent = profile.coins;
   refs.hints.textContent = profile.hints;
+  refs.nemesisInline.innerHTML = `
+    ${renderAvatar(nemesis.name, true)}
+    <div>
+      <strong>${nemesis.name}</strong>
+      <div class="board-subtle">${nemesis.losses} loss${nemesis.losses === 1 ? "" : "es"}</div>
+    </div>
+  `;
   refs.bestCategory.textContent = insights.best;
   refs.weakCategory.textContent = insights.weak;
   refs.categoryStats.innerHTML = insights.rows.length
@@ -109,6 +121,18 @@ function renderBootstrap() {
       </div>
     `).join("")
     : '<div class="category-row"><strong>No matches yet</strong><span class="board-subtle">Play a round to train the rivalry AI.</span></div>';
+  refs.nemesisPanel.innerHTML = `
+    <div class="nemesis-banner">
+      <div class="row-main">
+        ${renderAvatar(nemesis.name)}
+        <div>
+          <p class="practice-label">Current Nemesis</p>
+          <strong>${nemesis.name}</strong>
+        </div>
+      </div>
+      <div class="nemesis-copy">${nemesis.subtitle}</div>
+    </div>
+  `;
 
   refs.leaderboardList.innerHTML = leaderboard.map((entry) => `
     <article class="board-row">
@@ -158,6 +182,9 @@ async function startMatch(revengeMode) {
   try {
     clearTimers();
     document.body.classList.add("match-active");
+    document.body.classList.add("match-entering");
+    setTimeout(() => document.body.classList.remove("match-entering"), 900);
+    setPhaseState("practice");
     refs.joinButton.disabled = true;
     refs.revengeButton.disabled = true;
     refs.hintButton.disabled = true;
@@ -198,14 +225,19 @@ async function startMatch(revengeMode) {
     refs.timers.countdown = setInterval(() => {
       remaining -= 1;
       refs.countdownBadge.textContent = `${remaining}s`;
+      if (remaining <= 3 && remaining > 0) {
+        triggerCountdownOverlay(String(remaining), "Practice Ends");
+      }
       if (remaining <= 0) {
         clearInterval(refs.timers.countdown);
         refs.timers.countdown = null;
-        beginRound();
+        triggerCountdownOverlay("GO", "Match Start");
+        setTimeout(() => beginRound(), 520);
       }
     }, 1000);
   } catch (error) {
     document.body.classList.remove("match-active");
+    setPhaseState("idle");
     renderError(error.message);
     refs.joinButton.disabled = false;
     renderBootstrap();
@@ -213,12 +245,14 @@ async function startMatch(revengeMode) {
 }
 
 function renderPracticeStage(puzzle) {
+  refs.practiceStage.classList.remove("practice-success");
   refs.practicePuzzleTitle.textContent = `${puzzle.name} Warm-Up`;
   refs.practicePrompt.textContent = puzzle.prompt;
   refs.practiceHintCopy.textContent = puzzle.practice;
   refs.practiceStatus.textContent = "Warm-Up";
   refs.practiceStage.dataset.puzzleFamily = getPuzzleFamily(puzzle);
   refs.practiceArt.src = getPuzzleArt(puzzle);
+  refs.practiceArt.alt = `${puzzle.name} illustration`;
   renderPuzzleWorkspace({
     puzzle,
     workspace: refs.practiceWorkspace,
@@ -233,6 +267,7 @@ function beginRound() {
 
   state.match.phase = "live";
   state.match.startedAt = Date.now();
+  setPhaseState("live");
   refs.practiceStage.classList.add("hidden");
   refs.practiceCard.classList.add("hidden");
   refs.phaseTitle.textContent = "Race Live";
@@ -244,6 +279,7 @@ function beginRound() {
   refs.challengeForm.classList.remove("hidden");
   refs.challengeForm.dataset.puzzleFamily = getPuzzleFamily(state.match.puzzle);
   refs.challengeArt.src = getPuzzleArt(state.match.puzzle);
+  refs.challengeArt.alt = `${state.match.puzzle.name} illustration`;
   refs.announcement.textContent = `${state.match.puzzle.tagline} Practice is over. The live room is racing now.`;
   refs.hintButton.disabled = state.bootstrap.profile.hints <= 0;
 
@@ -360,6 +396,7 @@ function checkPracticeAnswer() {
   const puzzle = state.match.practicePuzzle;
   const correct = validateLocalPuzzle(puzzle, "practice");
   refs.practiceStatus.textContent = correct ? "Ready!" : "Keep Trying";
+  refs.practiceStage.classList.toggle("practice-success", correct);
   refs.practiceHintCopy.textContent = correct
     ? "You cleared the warm-up. The live race will switch in when the countdown hits zero."
     : puzzle.hint;
@@ -488,6 +525,9 @@ async function useHint() {
 function applyFinishedMatch(result) {
   clearTimers();
   document.body.classList.remove("match-active");
+  document.body.classList.remove("match-entering");
+  setPhaseState("idle");
+  refs.countdownOverlay.classList.add("hidden");
   refs.practiceStage.classList.add("hidden");
   refs.practiceCard.classList.remove("hidden");
   refs.challengeForm.classList.add("hidden");
@@ -516,6 +556,9 @@ function applyFinishedMatch(result) {
   refs.announcement.textContent = result.placement === 1
     ? "First place secured. Queue again before the room cools off."
     : `Winner: ${result.winner}. Revenge mode is tuned to your weaker categories for a harder rematch.`;
+  if (result.correct && result.placement <= 3) {
+    triggerBurst(result.placement === 1 ? "sparkle" : "celebrate");
+  }
   refs.joinButton.disabled = false;
   refs.modeLabel.textContent = "Post Match";
   refs.roundClock.textContent = result.elapsedSeconds ? `${result.elapsedSeconds.toFixed(1)}s` : "DNF";
@@ -531,7 +574,7 @@ function renderRivals(rivals) {
   }
 
   refs.rivalsList.innerHTML = rivals.map((rival) => `
-    <article class="rival-row">
+    <article class="rival-row rival-entrant">
       <div class="rival-main">
         <div class="row-main">
           ${renderAvatar(rival.name)}
@@ -544,6 +587,9 @@ function renderRivals(rivals) {
       </div>
     </article>
   `).join("");
+  Array.from(refs.rivalsList.querySelectorAll(".rival-entrant")).forEach((row, index) => {
+    row.style.setProperty("--entry-delay", `${index * 70}ms`);
+  });
 }
 
 function updateRivalProgress() {
@@ -577,6 +623,7 @@ async function resetProfile() {
   try {
     clearTimers();
     document.body.classList.remove("match-active");
+    setPhaseState("idle");
     state.match = null;
     state.bootstrap = await api("/api/profile/reset", {
       method: "POST",
@@ -617,13 +664,47 @@ function clearTimers() {
 }
 
 function renderAvatar(label, small = false) {
-  const letter = String(label).trim().charAt(0).toUpperCase();
+  const resolved = String(label || "?").trim() || "?";
+  const letter = resolved.charAt(0).toUpperCase();
   return `
     <span class="avatar-stack ${small ? "small" : ""}">
       <img class="avatar-frame-img" src="assets/avatar-frame-star.svg" alt="">
       <span class="avatar-letter">${letter}</span>
     </span>
   `;
+}
+
+function setPhaseState(phase) {
+  document.body.classList.toggle("phase-practice", phase === "practice");
+  document.body.classList.toggle("phase-live", phase === "live");
+}
+
+function triggerCountdownOverlay(value, label) {
+  refs.countdownValue.textContent = value;
+  refs.countdownLabel.textContent = label;
+  refs.countdownOverlay.classList.remove("hidden", "pop");
+  void refs.countdownOverlay.offsetWidth;
+  refs.countdownOverlay.classList.add("pop");
+  setTimeout(() => {
+    refs.countdownOverlay.classList.add("hidden");
+    refs.countdownOverlay.classList.remove("pop");
+  }, 700);
+}
+
+function triggerBurst(mode) {
+  const burst = document.createElement("div");
+  burst.className = `burst-layer ${mode}`;
+  for (let index = 0; index < 18; index += 1) {
+    const piece = document.createElement("span");
+    piece.className = "burst-piece";
+    piece.style.setProperty("--x", `${Math.random() * 100}%`);
+    piece.style.setProperty("--r", `${Math.random() * 360}deg`);
+    piece.style.setProperty("--d", `${300 + Math.random() * 600}ms`);
+    piece.style.setProperty("--y", `${30 + Math.random() * 90}px`);
+    burst.appendChild(piece);
+  }
+  document.body.appendChild(burst);
+  setTimeout(() => burst.remove(), 1300);
 }
 
 function getPuzzleFamily(puzzle) {

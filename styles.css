@@ -238,6 +238,7 @@ body::after {
   background: linear-gradient(180deg, #d8f8ff 0%, #9ae1ff 44%, #b9ffc1 100%);
   display: grid;
   place-items: center;
+  isolation: isolate;
 }
 
 .hero-mascot,
@@ -259,6 +260,7 @@ body::after {
   width: clamp(170px, 58%, 250px);
   left: 18px;
   bottom: 4px;
+  animation: floaty 3.8s ease-in-out infinite;
 }
 
 .hero-badge-art {
@@ -267,6 +269,7 @@ body::after {
   right: 18px;
   top: 14px;
   transform: rotate(14deg);
+  animation: bobSpin 4.6s ease-in-out infinite;
 }
 
 .hero-frame-art {
@@ -275,6 +278,7 @@ body::after {
   right: 22px;
   bottom: 16px;
   transform: rotate(-8deg);
+  animation: floaty 4.3s ease-in-out infinite 0.25s;
 }
 
 .hero-puzzle-art {
@@ -283,11 +287,12 @@ body::after {
   left: 18px;
   top: 10px;
   transform: rotate(-8deg);
+  animation: bobSpin 5s ease-in-out infinite 0.15s;
 }
 
 .wallet {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   align-self: stretch;
 }
@@ -322,6 +327,19 @@ body::after {
 .wallet-item:nth-child(1) { background: var(--surface-a); }
 .wallet-item:nth-child(2) { background: var(--surface-b); }
 .wallet-item:nth-child(3) { background: var(--surface-c); }
+.wallet-item:nth-child(4) { background: var(--surface-d); }
+
+.nemesis-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nemesis-inline strong,
+.nemesis-banner strong {
+  display: block;
+  font-size: 1.05rem;
+}
 
 .wallet-item strong,
 .stage-metric strong,
@@ -476,12 +494,18 @@ body::after {
   margin-top: 12px;
   padding: 16px;
   flex: 0 0 auto;
+  transition: transform 240ms ease, box-shadow 240ms ease, opacity 240ms ease;
 }
 
 .practice-card { background: linear-gradient(180deg, #f7ffbe 0%, #eaff9c 100%); }
 .practice-stage { background: linear-gradient(180deg, #ffe4f1 0%, #ffd3e7 100%); }
 .challenge-card { background: linear-gradient(180deg, #e1f7ff 0%, #c3ebff 100%); }
 .results-card { background: linear-gradient(180deg, #fff1c9 0%, #ffe4a4 100%); }
+
+.practice-stage.practice-success {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 14px 0 rgba(22, 50, 79, 0.12);
+}
 
 .countdown-badge {
   width: fit-content;
@@ -516,6 +540,48 @@ body::after {
 
 .hidden {
   display: none;
+}
+
+.countdown-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+}
+
+.countdown-ring {
+  width: min(42vw, 240px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  border: 8px solid var(--panel-border);
+  background: radial-gradient(circle at center, #fffef8 0%, #ffe67f 76%, #ffb64e 100%);
+  box-shadow: 0 16px 0 rgba(22, 50, 79, 0.16), 0 26px 44px rgba(22, 50, 79, 0.2);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 16px;
+}
+
+.countdown-overlay.pop .countdown-ring {
+  animation: countdownBlast 680ms cubic-bezier(0.2, 0.8, 0.22, 1);
+}
+
+.countdown-value {
+  display: block;
+  font-family: "Baloo 2", "Trebuchet MS", cursive;
+  font-size: clamp(3.2rem, 8vw, 5rem);
+  line-height: 0.9;
+}
+
+.countdown-label {
+  display: block;
+  margin-top: 2px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .puzzle-shell {
@@ -685,6 +751,13 @@ body::after {
   background: linear-gradient(180deg, #edfaff 0%, #d7f3ff 100%);
 }
 
+.rival-entrant {
+  opacity: 0;
+  transform: translateX(30px) scale(0.96);
+  animation: lobbySlideIn 520ms cubic-bezier(0.2, 0.8, 0.22, 1) forwards;
+  animation-delay: var(--entry-delay, 0ms);
+}
+
 .board-row { background: linear-gradient(180deg, #fff7cf 0%, #ffefb4 100%); }
 .category-row { background: linear-gradient(180deg, #fcefff 0%, #f6dcff 100%); }
 .meta-row { background: linear-gradient(180deg, #e9ffe6 0%, #d7ffd1 100%); }
@@ -772,6 +845,7 @@ body::after {
 
 .lobby-mascot {
   width: min(100%, 160px);
+  animation: mascotBounce 3.2s ease-in-out infinite;
 }
 
 .lobby-trophies {
@@ -783,6 +857,14 @@ body::after {
 .lobby-frame {
   width: 62px;
   height: 62px;
+}
+
+.lobby-badge {
+  animation: bobSpin 4.5s ease-in-out infinite;
+}
+
+.lobby-frame {
+  animation: bobSpin 4.5s ease-in-out infinite 0.35s;
 }
 
 .duo-metrics,
@@ -814,6 +896,25 @@ body::after {
 .theme-button {
   text-align: left;
   background: linear-gradient(180deg, #fffef8 0%, #fff3cb 100%);
+}
+
+.nemesis-panel {
+  margin-top: 12px;
+  flex: 0 0 auto;
+}
+
+.nemesis-banner {
+  border-radius: 22px;
+  border: 3px solid var(--panel-border);
+  background: linear-gradient(180deg, #ffd7eb 0%, #ffc2e0 100%);
+  box-shadow: 0 8px 0 rgba(22, 50, 79, 0.1);
+  padding: 14px;
+}
+
+.nemesis-copy {
+  margin-top: 10px;
+  color: var(--muted);
+  font-weight: 800;
 }
 
 .leaderboard-panel { min-height: 0; }
@@ -857,11 +958,20 @@ body.match-active .arena-grid {
   margin: 0 auto;
   z-index: 8;
   grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.8fr);
+  animation: matchLiftIn 480ms cubic-bezier(0.2, 0.8, 0.22, 1);
 }
 
 body.match-active .stage-panel,
 body.match-active .rivals-panel {
   height: calc(100dvh - 24px);
+}
+
+body.phase-live .challenge-card {
+  box-shadow: 0 14px 0 rgba(22, 50, 79, 0.14), 0 0 0 6px rgba(62, 156, 255, 0.12);
+}
+
+body.phase-live .lobby-spotlight {
+  animation: pulseGlow 1.5s ease-in-out infinite;
 }
 
 body.match-active .stage-panel {
@@ -892,6 +1002,80 @@ body.match-active .results-card {
   100% { transform: scale(1); }
 }
 
+.burst-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.burst-piece {
+  position: absolute;
+  left: var(--x);
+  top: 44%;
+  width: 14px;
+  height: 26px;
+  border-radius: 999px;
+  border: 2px solid var(--panel-border);
+  background: linear-gradient(180deg, #ffe35f 0%, #ff5ea8 100%);
+  transform: translate(-50%, 0) rotate(var(--r));
+  animation: burstTrail var(--d) cubic-bezier(0.2, 0.8, 0.22, 1) forwards;
+}
+
+.burst-layer.sparkle .burst-piece:nth-child(3n) {
+  background: linear-gradient(180deg, #7ed7ff 0%, #3e9cff 100%);
+}
+
+.burst-layer.sparkle .burst-piece:nth-child(3n + 1) {
+  background: linear-gradient(180deg, #d5ffe0 0%, #52d67d 100%);
+}
+
+.burst-layer.celebrate .burst-piece:nth-child(2n) {
+  background: linear-gradient(180deg, #ffd4ea 0%, #ff85c6 100%);
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+
+@keyframes bobSpin {
+  0%, 100% { transform: translateY(0) rotate(14deg); }
+  50% { transform: translateY(-8px) rotate(22deg); }
+}
+
+@keyframes mascotBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  35% { transform: translateY(-6px) rotate(-3deg); }
+  70% { transform: translateY(2px) rotate(2deg); }
+}
+
+@keyframes lobbySlideIn {
+  from { opacity: 0; transform: translateX(30px) scale(0.96); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes matchLiftIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes countdownBlast {
+  0% { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+  18% { opacity: 1; transform: scale(1.1) rotate(4deg); }
+  100% { opacity: 0; transform: scale(1.35) rotate(0deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); box-shadow: 0 8px 0 rgba(22, 50, 79, 0.12); }
+  50% { transform: scale(1.01); box-shadow: 0 10px 0 rgba(22, 50, 79, 0.16), 0 0 0 6px rgba(255, 94, 168, 0.12); }
+}
+
+@keyframes burstTrail {
+  0% { opacity: 1; transform: translate(-50%, 0) rotate(var(--r)) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(var(--y) * -1)) rotate(calc(var(--r) + 120deg)) scale(0.6); }
+}
+
 @media (max-width: 1120px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -909,6 +1093,7 @@ body.match-active .results-card {
 
   .wallet {
     grid-column: 1 / -1;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
