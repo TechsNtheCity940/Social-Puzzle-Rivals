@@ -54,8 +54,10 @@ const refs = {
   hintCopy: document.getElementById("hintCopy"),
   resultsCard: document.getElementById("resultsCard"),
   resultsTitle: document.getElementById("resultsTitle"),
+  resultScene: document.getElementById("resultScene"),
   resultsBody: document.getElementById("resultsBody"),
   podium: document.getElementById("podium"),
+  screenFlash: document.getElementById("screenFlash"),
   countdownOverlay: document.getElementById("countdownOverlay"),
   countdownValue: document.getElementById("countdownValue"),
   countdownLabel: document.getElementById("countdownLabel"),
@@ -226,9 +228,11 @@ async function startMatch(revengeMode) {
       remaining -= 1;
       refs.countdownBadge.textContent = `${remaining}s`;
       if (remaining <= 3 && remaining > 0) {
+        triggerScreenFlash("tick");
         triggerCountdownOverlay(String(remaining), "Practice Ends");
       }
       if (remaining <= 0) {
+        triggerScreenFlash("go");
         clearInterval(refs.timers.countdown);
         refs.timers.countdown = null;
         triggerCountdownOverlay("GO", "Match Start");
@@ -546,6 +550,8 @@ function applyFinishedMatch(result) {
   renderRivals([]);
 
   refs.resultsTitle.textContent = result.placement <= 3 ? `You placed #${result.placement}` : "You missed the podium";
+  refs.resultScene.innerHTML = buildResultScene(result);
+  refs.resultsCard.dataset.scene = getResultSceneType(result);
   refs.resultsBody.textContent = result.correct
     ? `Solved in ${result.elapsedSeconds.toFixed(1)}s. Reward: +${result.reward.points} season points and +${result.reward.coins} coins.`
     : "Time expired before you locked the answer. Queue again or trigger revenge mode.";
@@ -562,6 +568,11 @@ function applyFinishedMatch(result) {
     : `Winner: ${result.winner}. Revenge mode is tuned to your weaker categories for a harder rematch.`;
   if (result.correct && result.placement <= 3) {
     triggerBurst(result.placement === 1 ? "sparkle" : "celebrate");
+  }
+  if (!result.correct || result.placement > 3) {
+    triggerScreenFlash("loss");
+  } else if (result.placement === 1) {
+    triggerScreenFlash("win");
   }
   triggerResultsReveal();
   refs.joinButton.disabled = false;
@@ -679,7 +690,7 @@ function renderRivals(rivals) {
   }
 
   refs.rivalsList.innerHTML = rivals.map((rival) => `
-    <article class="rival-row rival-entrant">
+    <article class="rival-row rival-entrant ${rival.status === "surging" ? "surging" : ""}">
       <div class="rival-main">
         <div class="row-main">
           ${renderAvatar(rival.name)}
@@ -704,9 +715,11 @@ function updateRivalProgress() {
 
   const elapsed = (Date.now() - state.match.startedAt) / 1000;
   state.match.rivals.forEach((rival) => {
-    const progress = Math.min((elapsed / rival.finishTime) * 100, 100);
+    const raw = elapsed / rival.finishTime;
+    const surge = raw > 0.74 ? Math.pow((raw - 0.74) / 0.26, 1.45) * 0.14 : 0;
+    const progress = Math.min((raw + surge) * 100, 100);
     rival.progress = Math.round(progress);
-    rival.status = progress >= 100 ? "finished" : "solving";
+    rival.status = progress >= 100 ? "finished" : progress >= 82 ? "surging" : "solving";
   });
   renderRivals(state.match.rivals);
 }
@@ -837,6 +850,60 @@ function capitalize(value) {
 
 function renderError(message) {
   refs.announcement.textContent = `Server error: ${message}`;
+}
+
+function triggerScreenFlash(mode) {
+  refs.screenFlash.className = `screen-flash ${mode}`;
+  void refs.screenFlash.offsetWidth;
+  refs.screenFlash.classList.add("active");
+  setTimeout(() => {
+    refs.screenFlash.classList.remove("active");
+  }, mode === "loss" ? 520 : 380);
+}
+
+function getResultSceneType(result) {
+  if (result.correct && result.placement === 1) {
+    return "champion";
+  }
+  if (result.correct && result.placement <= 3) {
+    return "podium";
+  }
+  return "loss";
+}
+
+function buildResultScene(result) {
+  const scene = getResultSceneType(result);
+  if (scene === "champion") {
+    return `
+      <div class="scene-card champion">
+        <div class="scene-icon crown">1</div>
+        <div>
+          <strong>Champion Finish</strong>
+          <div class="board-subtle">You owned the room and set the pace.</div>
+        </div>
+      </div>
+    `;
+  }
+  if (scene === "podium") {
+    return `
+      <div class="scene-card podium">
+        <div class="scene-icon medal">3</div>
+        <div>
+          <strong>Podium Locked</strong>
+          <div class="board-subtle">Strong finish. One cleaner solve takes first next time.</div>
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div class="scene-card loss">
+      <div class="scene-icon storm">!</div>
+      <div>
+        <strong>Rematch Fuel</strong>
+        <div class="board-subtle">The room got away. Revenge mode is ready.</div>
+      </div>
+    </div>
+  `;
 }
 
 async function api(url, options = {}) {

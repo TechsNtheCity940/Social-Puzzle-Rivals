@@ -73,6 +73,38 @@ body {
   color: var(--text);
 }
 
+.screen-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+  opacity: 0;
+}
+
+.screen-flash.tick {
+  background: radial-gradient(circle at center, rgba(255, 227, 95, 0.22), rgba(255, 255, 255, 0));
+}
+
+.screen-flash.go {
+  background: radial-gradient(circle at center, rgba(62, 156, 255, 0.28), rgba(255, 255, 255, 0));
+}
+
+.screen-flash.win {
+  background: radial-gradient(circle at center, rgba(82, 214, 125, 0.28), rgba(255, 255, 255, 0));
+}
+
+.screen-flash.loss {
+  background: radial-gradient(circle at center, rgba(255, 106, 106, 0.22), rgba(255, 255, 255, 0));
+}
+
+.screen-flash.active {
+  animation: screenFlashPulse 380ms ease-out;
+}
+
+.screen-flash.loss.active {
+  animation-duration: 520ms;
+}
+
 body::before,
 body::after {
   content: "";
@@ -505,6 +537,59 @@ body::after {
   animation: resultsRise 420ms cubic-bezier(0.2, 0.8, 0.22, 1);
 }
 
+.result-scene {
+  margin-top: 12px;
+}
+
+.scene-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  border: 3px solid var(--panel-border);
+  box-shadow: 0 8px 0 rgba(22, 50, 79, 0.1);
+}
+
+.scene-card.champion {
+  background: linear-gradient(180deg, #ffe46a 0%, #ffbf43 100%);
+  animation: championGlow 1.2s ease-in-out infinite;
+}
+
+.scene-card.podium {
+  background: linear-gradient(180deg, #ffd7eb 0%, #ffb1d8 100%);
+}
+
+.scene-card.loss {
+  background: linear-gradient(180deg, #dff1ff 0%, #bedfff 100%);
+}
+
+.scene-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  border: 3px solid var(--panel-border);
+  background: #fff8ef;
+  font-family: "Baloo 2", "Trebuchet MS", cursive;
+  font-size: 1.6rem;
+  font-weight: 900;
+  box-shadow: 0 6px 0 rgba(22, 50, 79, 0.1);
+}
+
+.scene-icon.crown {
+  background: linear-gradient(180deg, #fff4ad 0%, #ffe067 100%);
+}
+
+.scene-icon.medal {
+  background: linear-gradient(180deg, #ffe4f1 0%, #ffc7df 100%);
+}
+
+.scene-icon.storm {
+  background: linear-gradient(180deg, #dff1ff 0%, #b8dcff 100%);
+}
+
 .practice-stage.practice-success {
   transform: translateY(-2px) scale(1.01);
   box-shadow: 0 14px 0 rgba(22, 50, 79, 0.12);
@@ -799,6 +884,10 @@ body::after {
   animation-delay: var(--entry-delay, 0ms);
 }
 
+.rival-row.surging {
+  animation: rivalSurge 820ms ease-in-out infinite;
+}
+
 .board-row { background: linear-gradient(180deg, #fff7cf 0%, #ffefb4 100%); }
 .category-row { background: linear-gradient(180deg, #fcefff 0%, #f6dcff 100%); }
 .meta-row { background: linear-gradient(180deg, #e9ffe6 0%, #d7ffd1 100%); }
@@ -1053,6 +1142,12 @@ body.match-active .results-card {
   100% { transform: scale(1); }
 }
 
+@keyframes screenFlashPulse {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 @keyframes inputShake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-8px); }
@@ -1088,6 +1183,16 @@ body.match-active .results-card {
   0% { opacity: 0; transform: translateY(24px) scale(0.92) rotate(-3deg); }
   70% { opacity: 1; transform: translateY(-4px) scale(1.02) rotate(1deg); }
   100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+
+@keyframes rivalSurge {
+  0%, 100% { transform: scale(1); box-shadow: 0 10px 0 rgba(22, 50, 79, 0.12); }
+  50% { transform: scale(1.015); box-shadow: 0 12px 0 rgba(22, 50, 79, 0.16), 0 0 0 5px rgba(255, 94, 168, 0.12); }
+}
+
+@keyframes championGlow {
+  0%, 100% { transform: scale(1); box-shadow: 0 8px 0 rgba(22, 50, 79, 0.1); }
+  50% { transform: scale(1.01); box-shadow: 0 10px 0 rgba(22, 50, 79, 0.16), 0 0 0 7px rgba(255, 227, 95, 0.18); }
 }
 
 .burst-layer {
