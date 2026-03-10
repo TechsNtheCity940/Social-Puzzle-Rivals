@@ -328,6 +328,7 @@ function renderPuzzleWorkspace({ puzzle, workspace, scope }) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "choice-button";
+      button.dataset.option = option;
       button.innerHTML = `<span class="choice-tag">${String.fromCharCode(65 + index)}</span><span>${option}</span>`;
       button.addEventListener("click", () => {
         state.match[`${scope}Choice`] = option;
@@ -395,6 +396,7 @@ function checkPracticeAnswer() {
 
   const puzzle = state.match.practicePuzzle;
   const correct = validateLocalPuzzle(puzzle, "practice");
+  showPracticeFeedback(puzzle, correct);
   refs.practiceStatus.textContent = correct ? "Ready!" : "Keep Trying";
   refs.practiceStage.classList.toggle("practice-success", correct);
   refs.practiceHintCopy.textContent = correct
@@ -436,6 +438,7 @@ async function handleAnswerSubmit(event) {
     });
 
     if (result.finished) {
+      showCorrectFeedback(state.match.puzzle);
       applyFinishedMatch(result);
       return;
     }
@@ -443,8 +446,8 @@ async function handleAnswerSubmit(event) {
     state.match.isResolving = false;
     state.match.penalties += 5;
     refs.penaltyChip.textContent = `Penalty +${state.match.penalties}s`;
-    refs.challengeForm.classList.add("flash");
-    setTimeout(() => refs.challengeForm.classList.remove("flash"), 500);
+    showWrongFeedback(state.match.puzzle);
+    triggerPenaltyFeedback();
   } catch (error) {
     state.match.isResolving = false;
     renderError(error.message);
@@ -532,6 +535,7 @@ function applyFinishedMatch(result) {
   refs.practiceCard.classList.remove("hidden");
   refs.challengeForm.classList.add("hidden");
   refs.resultsCard.classList.remove("hidden");
+  refs.resultsCard.classList.remove("result-reveal");
   refs.phaseTitle.textContent = "Results";
   refs.phaseBadge.textContent = "Final";
   refs.hintButton.disabled = true;
@@ -546,7 +550,7 @@ function applyFinishedMatch(result) {
     ? `Solved in ${result.elapsedSeconds.toFixed(1)}s. Reward: +${result.reward.points} season points and +${result.reward.coins} coins.`
     : "Time expired before you locked the answer. Queue again or trigger revenge mode.";
   refs.podium.innerHTML = result.podium.map((entry) => `
-    <div class="podium-place">
+    <div class="podium-place reveal-card">
       <div>#${entry.rank}</div>
       <strong>${entry.name}</strong>
       <div class="board-subtle">${entry.time ? `${entry.time.toFixed(1)}s` : "DNF"}</div>
@@ -559,12 +563,113 @@ function applyFinishedMatch(result) {
   if (result.correct && result.placement <= 3) {
     triggerBurst(result.placement === 1 ? "sparkle" : "celebrate");
   }
+  triggerResultsReveal();
   refs.joinButton.disabled = false;
   refs.modeLabel.textContent = "Post Match";
   refs.roundClock.textContent = result.elapsedSeconds ? `${result.elapsedSeconds.toFixed(1)}s` : "DNF";
   refs.practiceTitle.textContent = "No match active";
   refs.practiceBody.textContent = "Each round announces the puzzle type, then gives you a short warm-up before the race begins.";
   refs.countdownBadge.textContent = "--";
+}
+
+function showPracticeFeedback(puzzle, correct) {
+  clearWidgetStates(refs.practiceWorkspace);
+  if (correct) {
+    markCorrectState(refs.practiceWorkspace, puzzle, "practice");
+    return;
+  }
+  markWrongState(refs.practiceWorkspace, puzzle, "practice");
+}
+
+function showWrongFeedback(puzzle) {
+  clearWidgetStates(refs.challengeWorkspace);
+  markWrongState(refs.challengeWorkspace, puzzle, "live");
+}
+
+function showCorrectFeedback(puzzle) {
+  clearWidgetStates(refs.challengeWorkspace);
+  markCorrectState(refs.challengeWorkspace, puzzle, "live");
+}
+
+function clearWidgetStates(workspace) {
+  workspace.querySelectorAll(".wrong, .correct, .flip-out, .snap-pop").forEach((node) => {
+    node.classList.remove("wrong", "correct", "flip-out", "snap-pop");
+  });
+}
+
+function markWrongState(workspace, puzzle, scope) {
+  if (puzzle.kind === "text") {
+    const input = workspace.querySelector(".answer-input");
+    if (input) {
+      input.classList.add("wrong");
+    }
+    return;
+  }
+
+  if (puzzle.kind === "choice") {
+    const selected = state.match[`${scope}Choice`];
+    const target = workspace.querySelector(`.choice-button[data-option="${escapeSelector(selected)}"]`);
+    if (target) {
+      target.classList.add("wrong");
+    }
+    return;
+  }
+
+  if (puzzle.kind === "memory") {
+    workspace.querySelectorAll(".memory-button.selected").forEach((button) => {
+      const idx = Number(button.dataset.cellIndex);
+      if (!puzzle.previewCells.includes(idx)) {
+        button.classList.add("wrong", "flip-out");
+      }
+    });
+  }
+}
+
+function markCorrectState(workspace, puzzle, scope) {
+  if (puzzle.kind === "text") {
+    const input = workspace.querySelector(".answer-input");
+    if (input) {
+      input.classList.add("correct", "snap-pop");
+    }
+    return;
+  }
+
+  if (puzzle.kind === "choice") {
+    const selected = state.match[`${scope}Choice`];
+    const target = workspace.querySelector(`.choice-button[data-option="${escapeSelector(selected)}"]`);
+    if (target) {
+      target.classList.add("correct", "snap-pop");
+    }
+    return;
+  }
+
+  if (puzzle.kind === "memory") {
+    workspace.querySelectorAll(".memory-button").forEach((button) => {
+      const idx = Number(button.dataset.cellIndex);
+      if (puzzle.previewCells.includes(idx)) {
+        button.classList.add("correct", "flip-out");
+      }
+    });
+  }
+}
+
+function triggerPenaltyFeedback() {
+  refs.challengeForm.classList.remove("flash");
+  refs.penaltyChip.classList.remove("penalty-hit");
+  void refs.challengeForm.offsetWidth;
+  refs.challengeForm.classList.add("flash");
+  refs.penaltyChip.classList.add("penalty-hit");
+  setTimeout(() => refs.challengeForm.classList.remove("flash"), 520);
+  setTimeout(() => refs.penaltyChip.classList.remove("penalty-hit"), 620);
+}
+
+function triggerResultsReveal() {
+  refs.resultsCard.classList.remove("result-reveal");
+  void refs.resultsCard.offsetWidth;
+  refs.resultsCard.classList.add("result-reveal");
+  Array.from(refs.podium.children).forEach((card, index) => {
+    card.style.setProperty("--reveal-delay", `${180 + (index * 130)}ms`);
+  });
 }
 
 function renderRivals(rivals) {
@@ -717,6 +822,13 @@ function getPuzzleArt(puzzle) {
 
 function normalize(value) {
   return String(value).toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function escapeSelector(value) {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(String(value || ""));
+  }
+  return String(value || "").replace(/["\\]/g, "\\$&");
 }
 
 function capitalize(value) {
