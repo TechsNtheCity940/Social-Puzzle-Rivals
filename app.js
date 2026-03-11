@@ -19,7 +19,11 @@ const state = {
 
 const refs = {
   playerName: document.getElementById("playerName"),
+  playerAvatarLetter: document.getElementById("playerAvatarLetter"),
   playerClan: document.getElementById("playerClan"),
+  playerStatus: document.getElementById("playerStatus"),
+  playerRankTitle: document.getElementById("playerRankTitle"),
+  playerRankSubtitle: document.getElementById("playerRankSubtitle"),
   heroBestBadge: document.getElementById("heroBestBadge"),
   heroWeakBadge: document.getElementById("heroWeakBadge"),
   seasonPoints: document.getElementById("seasonPoints"),
@@ -118,11 +122,18 @@ async function refreshBootstrap() {
 function renderBootstrap() {
   const { profile, insights, leaderboard, tournaments, clans, nemesis } = state.bootstrap;
   const primaryClan = clans[0];
+  const rankTier = getRankTier(profile.seasonPoints);
 
   refs.playerName.textContent = profile.displayName;
+  refs.playerAvatarLetter.textContent = profile.displayName.charAt(0).toUpperCase();
   refs.playerClan.textContent = profile.clanName;
-  refs.heroBestBadge.textContent = `Best: ${insights.best}`;
-  refs.heroWeakBadge.textContent = `Worst: ${insights.weak}`;
+  refs.playerStatus.textContent = profile.lastWinner && profile.lastWinner !== "You"
+    ? `${profile.lastWinner} stole your last room`
+    : "Fresh queue energy. Ready for the next sprint.";
+  refs.playerRankTitle.textContent = rankTier.title;
+  refs.playerRankSubtitle.textContent = `${profile.seasonPoints} season pts`;
+  refs.heroBestBadge.textContent = insights.best;
+  refs.heroWeakBadge.textContent = insights.weak;
   refs.seasonPoints.textContent = profile.seasonPoints;
   refs.coins.textContent = profile.coins;
   refs.hints.textContent = profile.hints;
@@ -130,7 +141,8 @@ function renderBootstrap() {
     ${renderAvatar(nemesis.name, true)}
     <div>
       <strong>${nemesis.name}</strong>
-      <div class="board-subtle">${nemesis.losses} loss${nemesis.losses === 1 ? "" : "es"}</div>
+      <div class="board-subtle">${nemesis.losses} loss${nemesis.losses === 1 ? "" : "es"} to chase down</div>
+      <div class="nemesis-tagline">${nemesis.subtitle}</div>
     </div>
   `;
   refs.bestCategory.textContent = insights.best;
@@ -877,6 +889,18 @@ function escapeSelector(value) {
 
 function capitalize(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function getRankTier(points) {
+  const tiers = [
+    { min: 0, title: "Rookie Spark" },
+    { min: 150, title: "Puzzle Scout" },
+    { min: 350, title: "Rival Ace" },
+    { min: 700, title: "Brainwave Captain" },
+    { min: 1100, title: "Rematch Legend" },
+  ];
+
+  return [...tiers].reverse().find((tier) => points >= tier.min) || tiers[0];
 }
 
 function renderError(message) {

@@ -16,20 +16,46 @@
       <button class="menu-toggle" id="menuToggle" type="button">Menu</button>
       <div class="hero-copy">
         <p class="eyebrow">Social Puzzle Rivals</p>
-        <div class="player-strip">
-          <div>
-            <span class="wallet-label">Player</span>
-            <strong id="playerName">You</strong>
+        <div class="profile-marquee">
+          <div class="profile-identity">
+            <div class="profile-avatar-wrap">
+              <span class="avatar-stack hero-avatar">
+                <img class="avatar-frame-img" src="assets/avatar-frame-star.svg" alt="">
+                <span class="avatar-letter" id="playerAvatarLetter">Y</span>
+              </span>
+              <img class="profile-mini-badge" src="assets/badge-burst.svg" alt="">
+            </div>
+            <div class="profile-meta">
+              <span class="wallet-label">Player</span>
+              <strong id="playerName">You</strong>
+              <div class="profile-subtitle" id="playerStatus">Ready for the next sprint</div>
+            </div>
           </div>
-          <div class="player-pill" id="playerClan">Cipher Syndicate</div>
+          <div class="profile-awards">
+            <div class="player-pill" id="playerClan">Cipher Syndicate</div>
+            <div class="season-badge">
+              <img class="season-badge-art" src="assets/badge-burst.svg" alt="">
+              <div>
+                <span class="wallet-label">Season Rank</span>
+                <strong id="playerRankTitle">Rookie Spark</strong>
+                <div class="profile-subtitle" id="playerRankSubtitle">0 season pts</div>
+              </div>
+            </div>
+          </div>
         </div>
         <h1>Ready for the next duel?</h1>
         <p class="hero-text">
           Jump into a live-feeling room, warm up fast, and try to outrun the rival who keeps chasing your spot.
         </p>
-        <div class="hero-stickers hero-summary">
-          <span class="hero-sticker" id="heroBestBadge">Best: No data</span>
-          <span class="hero-sticker" id="heroWeakBadge">Worst: No data</span>
+        <div class="hero-summary-grid">
+          <article class="hero-summary-card best-card">
+            <span class="wallet-label">Best Category</span>
+            <strong id="heroBestBadge">No data</strong>
+          </article>
+          <article class="hero-summary-card weak-card">
+            <span class="wallet-label">Needs Work</span>
+            <strong id="heroWeakBadge">No data</strong>
+          </article>
         </div>
       </div>
       <div class="hero-art" aria-hidden="true">
